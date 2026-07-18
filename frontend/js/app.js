@@ -14,6 +14,11 @@ class App {
   }
 
   async init() {
+    // Disable automatic browser scroll restoration on page reload
+    if ('scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+
     // Check authentication
     await authManager.init();
 
@@ -49,7 +54,7 @@ class App {
       <!-- Top Navbar (Desktop & Mobile Brand / Toggle) -->
       <nav class="navbar">
         <a href="#dashboard" class="brand">
-          <div class="brand-icon">₹</div>
+          <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" />
           <span>Finora</span>
         </a>
 
@@ -206,25 +211,26 @@ class App {
       }
     }
 
-    const isPublicRoute = ['#landing', '#login', '#register'].includes(hash);
+    const isLandingSection = ['#landing', '#hero', '#features', '#about'].includes(hash);
+    const isPublicRoute = isLandingSection || ['#login', '#register'].includes(hash);
 
     if (!authManager.isAuthenticated() && !isPublicRoute) {
       window.location.hash = '#landing';
       return;
     }
 
-    if (authManager.isAuthenticated() && ['#login', '#register'].includes(hash)) {
+    if (authManager.isAuthenticated() && isPublicRoute) {
       window.location.hash = '#dashboard';
       return;
     }
 
     // Render App Navigation & Modal when authenticated and on an app route
-    const showAppNavbar = authManager.isAuthenticated() && hash !== '#landing';
+    const showAppNavbar = authManager.isAuthenticated() && !isLandingSection;
     const navbarHTML = showAppNavbar ? this.renderNavbar() : '';
 
     this.appContainer.innerHTML = `
       ${navbarHTML}
-      <main class="${hash === '#landing' ? '' : 'main-container'}" id="main-content"></main>
+      <main class="${isLandingSection ? '' : 'main-container'}" id="main-content"></main>
     `;
 
     const mainContent = document.getElementById('main-content');
@@ -355,7 +361,10 @@ class App {
     // Route Switcher
     switch (hash) {
       case '#landing':
-        renderLandingView(mainContent);
+      case '#hero':
+      case '#features':
+      case '#about':
+        renderLandingView(mainContent, hash.replace('#', ''));
         break;
       case '#register':
         renderAuthView(mainContent, true);
@@ -373,8 +382,14 @@ class App {
         await renderProfileView(mainContent);
         break;
       case '#dashboard':
-      default:
         await renderDashboardView(mainContent);
+        break;
+      default:
+        if (authManager.isAuthenticated()) {
+          await renderDashboardView(mainContent);
+        } else {
+          renderLandingView(mainContent, 'landing');
+        }
         break;
     }
   }

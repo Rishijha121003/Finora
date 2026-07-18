@@ -4,8 +4,8 @@ export function renderAuthView(container, isRegister = false) {
   container.innerHTML = `
     <div class="auth-wrapper">
       <div class="auth-header">
-        <div style="display:flex; justify-content:center; align-items:center; gap:0.5rem; margin-bottom:1rem;">
-          <div class="brand-icon">₹</div>
+        <div style="display:flex; justify-content:center; align-items:center; gap:0.6rem; margin-bottom:1rem;">
+          <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" style="width:40px; height:40px;" />
           <h1 style="font-size:1.6rem; font-weight:800;">Finora</h1>
         </div>
         <h2>${isRegister ? 'Create Account' : 'Welcome Back'}</h2>

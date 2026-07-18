@@ -1,6 +1,6 @@
 import { authManager } from '../auth.js';
 
-export function renderLandingView(container) {
+export function renderLandingView(container, targetSection = 'landing') {
   const isLoggedIn = authManager.isAuthenticated();
 
   container.innerHTML = `
@@ -9,7 +9,7 @@ export function renderLandingView(container) {
       <header class="landing-header">
         <div class="landing-nav-container">
           <a href="${isLoggedIn ? '#dashboard' : '#hero'}" class="brand">
-            <div class="brand-icon">₹</div>
+            <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" />
             <span>Finora</span>
           </a>
 
@@ -28,8 +28,8 @@ export function renderLandingView(container) {
             `}
           </div>
 
-          <!-- Mobile Nav Hamburger -->
-          <button class="landing-mobile-toggle" id="landing-mobile-toggle" aria-label="Toggle navigation">
+          <!-- Mobile Nav Hamburger Button -->
+          <button class="landing-mobile-toggle" id="landing-mobile-toggle" aria-label="Open mobile navigation menu">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <line x1="3" y1="12" x2="21" y2="12"></line>
               <line x1="3" y1="6" x2="21" y2="6"></line>
@@ -37,26 +37,51 @@ export function renderLandingView(container) {
             </svg>
           </button>
         </div>
+      </header>
 
-        <!-- Mobile Menu Dropdown -->
-        <div class="landing-mobile-dropdown" id="landing-mobile-dropdown">
-          <a href="#hero" class="landing-mobile-item">Home</a>
-          <a href="#features" class="landing-mobile-item">Features</a>
-          <a href="#about" class="landing-mobile-item">About</a>
-          <div class="landing-mobile-divider"></div>
+      <!-- Mobile Navigation Slide-in Drawer & Backdrop -->
+      <div class="landing-drawer-overlay" id="landing-drawer-overlay"></div>
+
+      <aside class="landing-drawer" id="landing-drawer" aria-hidden="true" role="dialog" aria-label="Mobile Navigation Menu">
+        <div class="landing-drawer-header">
+          <div class="brand">
+            <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" />
+            <span>Finora</span>
+          </div>
+          <button class="landing-drawer-close" id="landing-drawer-close" aria-label="Close menu">&times;</button>
+        </div>
+
+        <nav class="landing-drawer-nav">
+          <a href="#hero" class="landing-drawer-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            <span>Home</span>
+          </a>
+          <a href="#features" class="landing-drawer-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/></svg>
+            <span>Features</span>
+          </a>
+          <a href="#about" class="landing-drawer-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+            <span>About</span>
+          </a>
+        </nav>
+
+        <div class="landing-drawer-divider"></div>
+
+        <div class="landing-drawer-actions">
           ${isLoggedIn ? `
-            <a href="#dashboard" class="btn btn-primary btn-block">Go to Dashboard</a>
+            <a href="#dashboard" class="btn btn-primary btn-block btn-lg" style="justify-content:center;">Go to Dashboard</a>
           ` : `
-            <a href="#login" class="btn btn-secondary btn-block" style="margin-bottom:0.5rem;">Login</a>
-            <a href="#register" class="btn btn-primary btn-block">Get Started</a>
+            <a href="#login" class="btn btn-secondary btn-block" style="justify-content:center; margin-bottom:0.75rem; padding:0.7rem;">Login</a>
+            <a href="#register" class="btn btn-primary btn-block btn-lg" style="justify-content:center;">Get Started</a>
           `}
         </div>
-      </header>
+      </aside>
 
       <!-- Hero Section -->
       <section id="hero" class="landing-section hero-section">
         <div class="hero-content">
-          <div class="hero-badge">v1.1.0 Released — Personal Finance Platform</div>
+          <div class="hero-badge">Simple Finance Tracking. Clearer Decisions.</div>
           <h1 class="hero-title">Take Control of Your Money with <span class="highlight-text">Finora</span></h1>
           <p class="hero-subtitle">
             Track your income, manage expenses, and understand your financial health — all in one simple and secure place.
@@ -246,7 +271,7 @@ export function renderLandingView(container) {
       <footer class="landing-footer">
         <div class="footer-container">
           <div class="footer-brand">
-            <div class="brand-icon" style="width:28px; height:28px; font-size:0.9rem;">₹</div>
+            <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" style="width:28px; height:28px;" />
             <span style="font-weight:700; color:var(--text-main);">Finora</span>
           </div>
 
@@ -258,35 +283,80 @@ export function renderLandingView(container) {
           </div>
 
           <div class="footer-copy">
-            &copy; 2026 Finora v1.1.0. All rights reserved.
+            Finora v1.1.0 &bull; &copy; 2026 All rights reserved.
           </div>
         </div>
       </footer>
     </div>
   `;
 
-  // Attach Mobile Navigation Dropdown Toggle
+  // Attach Mobile Navigation Drawer Controls
   const mobileToggle = document.getElementById('landing-mobile-toggle');
-  const mobileDropdown = document.getElementById('landing-mobile-dropdown');
-  if (mobileToggle && mobileDropdown) {
-    mobileToggle.addEventListener('click', (e) => {
-      e.stopPropagation();
-      mobileDropdown.classList.toggle('active');
-    });
+  const drawer = document.getElementById('landing-drawer');
+  const overlay = document.getElementById('landing-drawer-overlay');
+  const drawerClose = document.getElementById('landing-drawer-close');
 
-    // Close on link click
-    const mobileLinks = mobileDropdown.querySelectorAll('a');
-    mobileLinks.forEach(link => {
-      link.addEventListener('click', () => {
-        mobileDropdown.classList.remove('active');
-      });
-    });
+  const openDrawer = () => {
+    if (drawer && overlay) {
+      drawer.classList.add('active');
+      overlay.classList.add('active');
+      drawer.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+    }
+  };
 
-    // Close on outside click
-    document.addEventListener('click', (e) => {
-      if (mobileDropdown.classList.contains('active') && !mobileDropdown.contains(e.target) && !mobileToggle.contains(e.target)) {
-        mobileDropdown.classList.remove('active');
+  const closeDrawer = () => {
+    if (drawer && overlay) {
+      drawer.classList.remove('active');
+      overlay.classList.remove('active');
+      drawer.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+  };
+
+  if (mobileToggle) mobileToggle.addEventListener('click', openDrawer);
+  if (drawerClose) drawerClose.addEventListener('click', closeDrawer);
+  if (overlay) overlay.addEventListener('click', closeDrawer);
+
+  // Close drawer on link click
+  const drawerLinks = drawer ? drawer.querySelectorAll('a') : [];
+  drawerLinks.forEach(link => {
+    link.addEventListener('click', closeDrawer);
+  });
+
+  // Close drawer on Escape key
+  const handleKeyDown = (e) => {
+    if (e.key === 'Escape' && drawer && drawer.classList.contains('active')) {
+      closeDrawer();
+    }
+  };
+  document.addEventListener('keydown', handleKeyDown);
+
+  // Smooth Section Scrolling Click Handlers (Prevents conflicting SPA hash navigation on reload)
+  const sectionLinks = container.querySelectorAll('a[href="#hero"], a[href="#features"], a[href="#about"]');
+  sectionLinks.forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const targetId = link.getAttribute('href').replace('#', '');
+      const targetEl = document.getElementById(targetId);
+
+      if (targetId === 'hero' || targetId === 'landing') {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else if (targetEl) {
+        targetEl.scrollIntoView({ behavior: 'smooth' });
       }
+
+      closeDrawer();
     });
+  });
+
+  // Handle Initial View Scroll Position
+  if (targetSection === 'features' || targetSection === 'about') {
+    const initialEl = document.getElementById(targetSection);
+    if (initialEl) {
+      setTimeout(() => initialEl.scrollIntoView({ behavior: 'smooth' }), 50);
+    }
+  } else {
+    window.scrollTo(0, 0);
   }
 }
