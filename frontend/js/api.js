@@ -1,6 +1,8 @@
 // Finora REST API Client
 
-const API_BASE_URL = 'http://localhost:8000/api/v1';
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:8000/api/v1'
+  : 'https://finora-9nid.onrender.com/api/v1';
 
 class APIClient {
   static getAuthToken() {
