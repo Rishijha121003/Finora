@@ -36,14 +36,21 @@ export async function renderProfileView(container) {
           </select>
         </div>
 
-        <div style="display:flex; justify-content:flex-end; margin-top:1.5rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; border-top:1px solid var(--glass-border); padding-top:1.2rem;">
+          <button type="button" id="btn-profile-feedback" class="btn btn-secondary">Give Feedback</button>
           <button type="submit" class="btn btn-primary">Save Profile Changes</button>
         </div>
       </form>
     </div>
+
   `;
 
+  document.getElementById('btn-profile-feedback')?.addEventListener('click', () => {
+    document.getElementById('feedback-modal')?.classList.add('active');
+  });
+
   document.getElementById('profile-form').addEventListener('submit', async (e) => {
+
     e.preventDefault();
     const msgDiv = document.getElementById('profile-message');
     msgDiv.style.display = 'none';

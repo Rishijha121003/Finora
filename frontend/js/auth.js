@@ -36,8 +36,9 @@ class AuthManager {
   logout() {
     APIClient.setAuthToken(null);
     this.currentUser = null;
-    window.location.hash = '#login';
+    window.location.hash = '#landing';
   }
+
 
   isAuthenticated() {
     return !!this.currentUser;

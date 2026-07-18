@@ -4,6 +4,7 @@ import { renderDashboardView } from './views/dashboardView.js';
 import { renderTransactionsView } from './views/transactionsView.js';
 import { renderCategoriesView } from './views/categoriesView.js';
 import { renderProfileView } from './views/profileView.js';
+import { renderLandingView } from './views/landingView.js';
 import APIClient from './api.js';
 
 class App {
@@ -191,7 +192,11 @@ class App {
   }
 
   async handleRoute() {
-    const rawHash = window.location.hash || (authManager.isAuthenticated() ? '#dashboard' : '#login');
+    let rawHash = window.location.hash;
+    if (!rawHash || rawHash === '#') {
+      rawHash = authManager.isAuthenticated() ? '#dashboard' : '#landing';
+    }
+
     const [hash, queryString] = rawHash.split('?');
     const queryParams = {};
     if (queryString) {
@@ -201,30 +206,31 @@ class App {
       }
     }
 
-    const isPublicRoute = ['#login', '#register'].includes(hash);
+    const isPublicRoute = ['#landing', '#login', '#register'].includes(hash);
 
     if (!authManager.isAuthenticated() && !isPublicRoute) {
-      window.location.hash = '#login';
+      window.location.hash = '#landing';
       return;
     }
 
-    if (authManager.isAuthenticated() && isPublicRoute) {
+    if (authManager.isAuthenticated() && ['#login', '#register'].includes(hash)) {
       window.location.hash = '#dashboard';
       return;
     }
 
-    // Render Navigation & Modal
-    const navbarHTML = authManager.isAuthenticated() ? this.renderNavbar() : '';
+    // Render App Navigation & Modal when authenticated and on an app route
+    const showAppNavbar = authManager.isAuthenticated() && hash !== '#landing';
+    const navbarHTML = showAppNavbar ? this.renderNavbar() : '';
 
     this.appContainer.innerHTML = `
       ${navbarHTML}
-      <main class="main-container" id="main-content"></main>
+      <main class="${hash === '#landing' ? '' : 'main-container'}" id="main-content"></main>
     `;
 
     const mainContent = document.getElementById('main-content');
 
     // Attach Event Handlers for Authenticated User Navigation & Feedback Modal
-    if (authManager.isAuthenticated()) {
+    if (authManager.isAuthenticated() && showAppNavbar) {
       // Desktop Logout & Mobile Logout
       document.getElementById('btn-logout')?.addEventListener('click', () => authManager.logout());
       document.getElementById('btn-mobile-logout')?.addEventListener('click', () => authManager.logout());
@@ -348,6 +354,9 @@ class App {
 
     // Route Switcher
     switch (hash) {
+      case '#landing':
+        renderLandingView(mainContent);
+        break;
       case '#register':
         renderAuthView(mainContent, true);
         break;
