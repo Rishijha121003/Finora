@@ -27,7 +27,7 @@ class Settings(BaseSettings):
         "http://127.0.0.1:3000",
         "http://localhost:8000",
         "http://127.0.0.1:8000",
-        "https://fantastic-crumble-91923c.netlify.app"
+        "https://usefinora.netlify.app"
     ]
     
     @field_validator("ALLOWED_ORIGINS", mode="before")
