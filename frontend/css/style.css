@@ -843,3 +843,31 @@ body {
     padding: 0.25rem 0.25rem;
   }
 }
+
+/* Rating Selector */
+.rating-selector {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.rating-btn {
+  flex: 1;
+  background: rgba(30, 41, 59, 0.7);
+  border: 1px solid var(--glass-border);
+  color: var(--text-muted);
+  border-radius: var(--radius-sm);
+  padding: 0.5rem 0.25rem;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+}
+
+.rating-btn.active, .rating-btn:hover {
+  background: rgba(245, 158, 11, 0.2);
+  border-color: #f59e0b;
+  color: #fbbf24;
+}
+

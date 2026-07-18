@@ -143,6 +143,15 @@ class APIClient {
     if (endDate) params.append('end_date', endDate);
     return this.request(`/dashboard/summary?${params.toString()}`);
   }
+
+  // Feedback Endpoint
+  static async submitFeedback(feedbackData) {
+    return this.request('/feedback', {
+      method: 'POST',
+      body: JSON.stringify(feedbackData)
+    });
+  }
+
 }
 
 export default APIClient;

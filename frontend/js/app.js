@@ -9,6 +9,7 @@ import APIClient from './api.js';
 class App {
   constructor() {
     this.appContainer = document.getElementById('app');
+    this.selectedRating = 5;
   }
 
   async init() {
@@ -70,6 +71,9 @@ class App {
               <option value="GBP" ${user.currency_code === 'GBP' ? 'selected' : ''}>£ GBP</option>
             </select>
           </div>
+          <button class="btn btn-secondary" id="btn-feedback" style="padding:0.4rem 0.8rem; font-size:0.85rem; margin-right:0.4rem;">
+            Feedback
+          </button>
           <button class="btn btn-secondary" id="btn-logout" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
             Logout
           </button>
@@ -104,6 +108,9 @@ class App {
             </select>
           </div>
           <div class="mobile-menu-divider"></div>
+          <button class="btn btn-secondary btn-block" id="btn-mobile-feedback" style="padding:0.5rem; font-size:0.85rem; margin-bottom:0.5rem;">
+            Send Feedback
+          </button>
           <button class="btn btn-danger btn-block" id="btn-mobile-logout" style="padding:0.5rem; font-size:0.85rem;">
             Logout
           </button>
@@ -136,6 +143,50 @@ class App {
           <span>Categories</span>
         </a>
       </div>
+
+      <!-- Feedback Modal -->
+      <div class="modal-overlay" id="feedback-modal">
+        <div class="modal">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+            <h3 style="font-size:1.25rem; font-weight:700; color:var(--text-main); margin:0;">Send Feedback</h3>
+            <button type="button" class="btn" id="btn-close-feedback-modal" style="padding:0.2rem 0.5rem; font-size:1.3rem; border:none; background:transparent; color:var(--text-muted); cursor:pointer;">&times;</button>
+          </div>
+          <div id="feedback-alert" style="display:none; padding:0.75rem; border-radius:var(--radius-sm); margin-bottom:1rem; font-size:0.88rem;"></div>
+          <form id="feedback-form">
+            <div style="margin-bottom:1rem;">
+              <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Overall Rating (1 - 5)</label>
+              <div class="rating-selector" id="feedback-rating-selector">
+                <button type="button" class="rating-btn" data-val="1">★ 1</button>
+                <button type="button" class="rating-btn" data-val="2">★ 2</button>
+                <button type="button" class="rating-btn" data-val="3">★ 3</button>
+                <button type="button" class="rating-btn" data-val="4">★ 4</button>
+                <button type="button" class="rating-btn active" data-val="5">★ 5</button>
+              </div>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Feedback Type</label>
+              <select id="feedback-type" class="form-control" style="width:100%;" required>
+                <option value="GENERAL">General Feedback</option>
+                <option value="BUG">Bug Report</option>
+                <option value="FEATURE_REQUEST">Feature Request</option>
+              </select>
+            </div>
+            <div style="margin-bottom:1rem;">
+              <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Message</label>
+              <textarea id="feedback-msg" class="form-control" style="width:100%; resize:vertical;" rows="4" placeholder="Tell us what you think or what we can improve..." minlength="5" maxlength="2000" required></textarea>
+            </div>
+            <div style="margin-bottom:1.2rem;">
+              <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Would you use Finora again?</label>
+              <select id="feedback-again" class="form-control" style="width:100%;" required>
+                <option value="YES">Yes, absolutely</option>
+                <option value="MAYBE">Maybe</option>
+                <option value="NO">No</option>
+              </select>
+            </div>
+            <button type="submit" id="btn-submit-feedback-form" class="btn btn-primary btn-block" style="padding:0.65rem; font-weight:600;">Submit Feedback</button>
+          </form>
+        </div>
+      </div>
     `;
   }
 
@@ -162,7 +213,7 @@ class App {
       return;
     }
 
-    // Render Navigation
+    // Render Navigation & Modal
     const navbarHTML = authManager.isAuthenticated() ? this.renderNavbar() : '';
 
     this.appContainer.innerHTML = `
@@ -172,7 +223,7 @@ class App {
 
     const mainContent = document.getElementById('main-content');
 
-    // Attach Event Handlers for Authenticated User Navigation
+    // Attach Event Handlers for Authenticated User Navigation & Feedback Modal
     if (authManager.isAuthenticated()) {
       // Desktop Logout & Mobile Logout
       document.getElementById('btn-logout')?.addEventListener('click', () => authManager.logout());
@@ -201,6 +252,98 @@ class App {
 
       document.getElementById('header-currency-select')?.addEventListener('change', (e) => handleCurrencyChange(e.target.value));
       document.getElementById('mobile-currency-select')?.addEventListener('change', (e) => handleCurrencyChange(e.target.value));
+
+      // Feedback Modal Controls
+      const feedbackModal = document.getElementById('feedback-modal');
+      const openFeedbackModal = () => {
+        if (mobileDropdown) mobileDropdown.classList.remove('active');
+        if (feedbackModal) feedbackModal.classList.add('active');
+      };
+      const closeFeedbackModal = () => {
+        if (feedbackModal) feedbackModal.classList.remove('active');
+        const alertBox = document.getElementById('feedback-alert');
+        if (alertBox) alertBox.style.display = 'none';
+      };
+
+      document.getElementById('btn-feedback')?.addEventListener('click', openFeedbackModal);
+      document.getElementById('btn-mobile-feedback')?.addEventListener('click', openFeedbackModal);
+      document.getElementById('btn-close-feedback-modal')?.addEventListener('click', closeFeedbackModal);
+
+      // Close modal on backdrop click
+      feedbackModal?.addEventListener('click', (e) => {
+        if (e.target === feedbackModal) closeFeedbackModal();
+      });
+
+      // Rating selector behavior
+      const ratingBtns = document.querySelectorAll('#feedback-rating-selector .rating-btn');
+      ratingBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          ratingBtns.forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+          this.selectedRating = parseInt(btn.getAttribute('data-val'), 10);
+        });
+      });
+
+      // Feedback Form Submission
+      const feedbackForm = document.getElementById('feedback-form');
+      feedbackForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const alertBox = document.getElementById('feedback-alert');
+        const submitBtn = document.getElementById('btn-submit-feedback-form');
+
+        const rating = this.selectedRating || 5;
+        const feedback_type = document.getElementById('feedback-type').value;
+        const message = document.getElementById('feedback-msg').value.trim();
+        const would_use_again = document.getElementById('feedback-again').value;
+
+        if (message.length < 5) {
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.color = '#ef4444';
+          alertBox.style.border = '1px solid #ef4444';
+          alertBox.textContent = 'Feedback message must be at least 5 characters long.';
+          return;
+        }
+
+        try {
+          submitBtn.disabled = true;
+          submitBtn.textContent = 'Submitting...';
+          alertBox.style.display = 'none';
+
+          await APIClient.submitFeedback({
+            rating,
+            feedback_type,
+            message,
+            would_use_again
+          });
+
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
+          alertBox.style.color = '#10b981';
+          alertBox.style.border = '1px solid #10b981';
+          alertBox.textContent = 'Thank you! Your feedback has been submitted successfully.';
+
+          feedbackForm.reset();
+          this.selectedRating = 5;
+          ratingBtns.forEach(b => b.classList.remove('active'));
+          document.querySelector('#feedback-rating-selector .rating-btn[data-val="5"]')?.classList.add('active');
+
+          setTimeout(() => {
+            closeFeedbackModal();
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Feedback';
+          }, 1800);
+
+        } catch (err) {
+          submitBtn.disabled = false;
+          submitBtn.textContent = 'Submit Feedback';
+          alertBox.style.display = 'block';
+          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
+          alertBox.style.color = '#ef4444';
+          alertBox.style.border = '1px solid #ef4444';
+          alertBox.textContent = err.message || 'Failed to submit feedback. Please try again.';
+        }
+      });
     }
 
     // Route Switcher
