@@ -15,11 +15,10 @@ try:
     with engine.connect() as conn:
         pass
 except Exception:
-    # In-memory fallback with StaticPool so all connections share the same in-memory schema
+    # Persistent local SQLite fallback database when local PostgreSQL is not running
     engine = create_engine(
-        "sqlite:///:memory:",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool
+        "sqlite:///./finora.db",
+        connect_args={"check_same_thread": False}
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

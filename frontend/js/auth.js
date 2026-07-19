@@ -20,17 +20,29 @@ class AuthManager {
   }
 
   async login(email, password) {
-    const res = await APIClient.login(email, password);
-    APIClient.setAuthToken(res.access_token);
-    this.currentUser = res.user;
-    return this.currentUser;
+    try {
+      const res = await APIClient.login(email, password);
+      APIClient.setAuthToken(res.access_token);
+      this.currentUser = res.user;
+      return this.currentUser;
+    } catch (err) {
+      APIClient.setAuthToken(null);
+      this.currentUser = null;
+      throw err;
+    }
   }
 
   async register(name, email, password, currencyCode = 'INR') {
-    const res = await APIClient.register(name, email, password, currencyCode);
-    APIClient.setAuthToken(res.access_token);
-    this.currentUser = res.user;
-    return this.currentUser;
+    try {
+      const res = await APIClient.register(name, email, password, currencyCode);
+      APIClient.setAuthToken(res.access_token);
+      this.currentUser = res.user;
+      return this.currentUser;
+    } catch (err) {
+      APIClient.setAuthToken(null);
+      this.currentUser = null;
+      throw err;
+    }
   }
 
   logout() {

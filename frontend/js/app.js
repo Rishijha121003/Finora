@@ -1,9 +1,9 @@
 import { authManager } from './auth.js';
 import { renderAuthView } from './views/authView.js';
-import { renderDashboardView } from './views/dashboardView.js';
-import { renderTransactionsView } from './views/transactionsView.js';
-import { renderCategoriesView } from './views/categoriesView.js';
-import { renderProfileView } from './views/profileView.js';
+import { renderDashboardView } from './views/dashboardView.js?v=1.2.0';
+import { renderTransactionsView } from './views/transactionsView.js?v=1.2.0';
+import { renderCategoriesView } from './views/categoriesView.js?v=1.2.0';
+import { renderProfileView } from './views/profileView.js?v=1.2.0';
 import { renderLandingView } from './views/landingView.js';
 import APIClient from './api.js';
 
@@ -54,7 +54,7 @@ class App {
       <!-- Top Navbar (Desktop & Mobile Brand / Toggle) -->
       <nav class="navbar">
         <a href="#dashboard" class="brand">
-          <img src="assets/logo.png?v=1.1.0" class="brand-logo-img" alt="Finora Logo" />
+          <img src="assets/logo.png?v=1.2.0" class="brand-logo-img" alt="Finora Logo" />
           <span>Finora</span>
         </a>
 
@@ -148,6 +148,13 @@ class App {
           </svg>
           <span>Categories</span>
         </a>
+        <a href="#profile" class="bottom-nav-item ${currentHash.startsWith('#profile') ? 'active' : ''}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Profile</span>
+        </a>
       </div>
 
       <!-- Feedback Modal -->
@@ -179,7 +186,7 @@ class App {
             </div>
             <div style="margin-bottom:1rem;">
               <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Message</label>
-              <textarea id="feedback-msg" class="form-control" style="width:100%; resize:vertical;" rows="4" placeholder="Tell us what you think or what we can improve..." minlength="5" maxlength="2000" required></textarea>
+              <textarea id="feedback-msg" class="form-control" style="width:100%; resize:none;" rows="4" placeholder="Tell us what you think or what we can improve..." minlength="5" maxlength="2000" required></textarea>
             </div>
             <div style="margin-bottom:1.2rem;">
               <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Would you use Finora again?</label>
@@ -191,6 +198,29 @@ class App {
             </div>
             <button type="submit" id="btn-submit-feedback-form" class="btn btn-primary btn-block" style="padding:0.65rem; font-weight:600;">Submit Feedback</button>
           </form>
+        </div>
+      </div>
+
+      <!-- About Finora Modal -->
+      <div class="modal-overlay" id="about-modal">
+        <div class="modal" style="max-width:380px; text-align:center;">
+          <div style="display:flex; justify-content:flex-end;">
+            <button type="button" class="btn" id="btn-close-about-modal" style="padding:0.2rem 0.5rem; font-size:1.3rem; border:none; background:transparent; color:var(--text-muted); cursor:pointer;">&times;</button>
+          </div>
+          <div style="width:56px; height:56px; background:linear-gradient(135deg, var(--primary), #8b5cf6); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:1.6rem; font-weight:800; margin-bottom:0.75rem; box-shadow:0 4px 16px rgba(99,102,241,0.4);">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-bottom:0.2rem;">Finora</h3>
+          <p style="font-size:0.85rem; font-weight:600; color:var(--primary); margin-bottom:0.75rem;">Personal Finance Management Platform</p>
+          <div style="display:inline-block; font-size:0.75rem; font-weight:700; color:var(--text-main); background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:1rem;">
+            Version v1.2.0
+          </div>
+          <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:1.2rem;">
+            Track your income, expenses, and financial activity in one simple place.
+          </p>
+          <button type="button" class="btn btn-primary" id="btn-done-about-modal" style="width:100%; padding:0.6rem; font-weight:700; border-radius:10px;">Close</button>
         </div>
       </div>
     `;
@@ -284,6 +314,15 @@ class App {
       // Close modal on backdrop click
       feedbackModal?.addEventListener('click', (e) => {
         if (e.target === feedbackModal) closeFeedbackModal();
+      });
+
+      // About Modal Controls
+      const aboutModal = document.getElementById('about-modal');
+      const closeAboutModal = () => aboutModal?.classList.remove('active');
+      document.getElementById('btn-close-about-modal')?.addEventListener('click', closeAboutModal);
+      document.getElementById('btn-done-about-modal')?.addEventListener('click', closeAboutModal);
+      aboutModal?.addEventListener('click', (e) => {
+        if (e.target === aboutModal) closeAboutModal();
       });
 
       // Rating selector behavior

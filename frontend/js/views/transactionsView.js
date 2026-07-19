@@ -9,36 +9,97 @@ export async function renderTransactionsView(container, queryParams = {}) {
   const currencyCode = authManager.getUserCurrency();
 
   container.innerHTML = `
-    <div class="section-toolbar">
-      <div>
-        <h1 style="font-size:1.6rem; font-weight:800;">Transactions</h1>
-        <p style="color:var(--text-muted); font-size:0.9rem;">View, search, filter, and manage income & expense records</p>
+    <div class="tx-page-container">
+      <!-- Header Section -->
+      <div class="tx-header-row">
+        <div>
+          <h1 class="tx-title">Transactions</h1>
+          <p class="tx-subtitle">Track and manage your financial activity</p>
+        </div>
+
+        <button class="btn-add-tx-main" id="btn-add-tx">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"/>
+            <line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          <span>Add Transaction</span>
+        </button>
       </div>
 
-      <button class="btn btn-primary" id="btn-add-tx" style="width:100%; max-width:220px;">
-        + Add New Transaction
-      </button>
+      <!-- Search Input Container -->
+      <div class="tx-search-container">
+        <svg class="tx-search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="search-input" class="tx-search-input" placeholder="Search notes or category..." />
+      </div>
+
+      <!-- Filter Controls Grid -->
+      <div class="tx-filters-grid">
+        <select id="filter-type" class="tx-filter-select">
+          <option value="">All Types</option>
+          <option value="INCOME">Income Only</option>
+          <option value="EXPENSE">Expense Only</option>
+        </select>
+
+        <select id="filter-category" class="tx-filter-select">
+          <option value="">All Categories</option>
+        </select>
+
+        <button type="button" class="btn-adv-filters" id="btn-open-adv-filters">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+          </svg>
+          <span>Filters</span>
+          <span class="adv-filter-dot" id="adv-filter-active-dot" style="display:none;"></span>
+        </button>
+      </div>
+
+      <!-- Segmented Type Tabs Bar -->
+      <div class="tx-type-tabs">
+        <button type="button" class="tx-tab-btn active-all" id="tab-tx-all">
+          <span>All</span>
+          <span id="tab-count-all">(0)</span>
+        </button>
+
+        <button type="button" class="tx-tab-btn" id="tab-tx-income">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="17" x2="17" y2="7"/>
+            <polyline points="7 7 17 7 17 17"/>
+          </svg>
+          <span>Income</span>
+          <span id="tab-count-income">(0)</span>
+        </button>
+
+        <button type="button" class="tx-tab-btn" id="tab-tx-expense">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="7" y1="7" x2="17" y2="17"/>
+            <polyline points="17 7 17 17 7 17"/>
+          </svg>
+          <span>Expense</span>
+          <span id="tab-count-expense">(0)</span>
+        </button>
+      </div>
+
+      <!-- Transaction Table / Mobile Cards Container -->
+      <div id="tx-table-container">
+        <div class="empty-state" style="padding:2rem;">Loading transactions...</div>
+      </div>
+
+      <div id="pagination-container" style="display:flex; justify-content:space-between; align-items:center; margin-top:1rem; padding-top:0.75rem; border-top:1px solid var(--glass-border); flex-wrap:wrap; gap:0.75rem;"></div>
     </div>
 
-    <!-- Filters & Search Toolbar -->
-    <div class="card" style="margin-bottom:1.5rem; padding:1.2rem;">
-      <div class="filter-grid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:1rem; align-items:center;">
-        <div>
-          <input type="text" id="search-input" class="form-control" placeholder="Search notes or category..." />
+    <!-- Advanced Filters Modal -->
+    <div class="modal-overlay" id="adv-filter-modal">
+      <div class="modal" style="max-width:380px;">
+        <div class="modal-header">
+          <h3 class="modal-title">Advanced Filters</h3>
+          <button class="modal-close" id="adv-filter-close-btn">&times;</button>
         </div>
-        <div>
-          <select id="filter-type" class="form-control">
-            <option value="">All Types (Income & Expense)</option>
-            <option value="INCOME">Income Only</option>
-            <option value="EXPENSE">Expense Only</option>
-          </select>
-        </div>
-        <div>
-          <select id="filter-category" class="form-control">
-            <option value="">All Categories</option>
-          </select>
-        </div>
-        <div>
+        
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label>Payment Method</label>
           <select id="filter-payment" class="form-control">
             <option value="">All Payment Methods</option>
             <option value="UPI">UPI</option>
@@ -48,19 +109,23 @@ export async function renderTransactionsView(container, queryParams = {}) {
             <option value="OTHER">Other</option>
           </select>
         </div>
-        <div class="date-range-container" style="display:flex; gap:0.5rem;">
-          <input type="date" id="filter-start-date" class="form-control" title="Start Date" />
-          <input type="date" id="filter-end-date" class="form-control" title="End Date" />
+
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
+          <div class="form-group">
+            <label>From Date</label>
+            <input type="date" id="filter-start-date" class="form-control" />
+          </div>
+          <div class="form-group">
+            <label>To Date</label>
+            <input type="date" id="filter-end-date" class="form-control" />
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
+          <button type="button" class="btn btn-secondary" id="adv-filter-reset-btn" style="flex:1;">Reset</button>
+          <button type="button" class="btn btn-primary" id="adv-filter-apply-btn" style="flex:1.5;">Apply Filters</button>
         </div>
       </div>
-    </div>
-
-    <!-- Transaction Table / Mobile Cards Container -->
-    <div class="card">
-      <div id="tx-table-container">
-        <div class="empty-state">Loading transactions...</div>
-      </div>
-      <div id="pagination-container" style="display:flex; justify-content:space-between; align-items:center; margin-top:1.5rem; padding-top:1rem; border-top:1px solid var(--glass-border); flex-wrap:wrap; gap:1rem;"></div>
     </div>
 
     <!-- Modal for Add/Edit Transaction -->
@@ -132,23 +197,98 @@ export async function renderTransactionsView(container, queryParams = {}) {
   }
 
   // Set default today's date in tx form
-  document.getElementById('tx-date').value = new Date().toISOString().split('T')[0];
+  const dateInput = document.getElementById('tx-date');
+  if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
 
-  // Event Listeners for Filters
+  // Filters State & Reloaders
   let currentPage = 1;
   const triggerReload = () => {
     currentPage = 1;
     loadTransactions(currentPage, currencyCode);
   };
 
-  document.getElementById('search-input').addEventListener('input', debounce(triggerReload, 300));
-  document.getElementById('filter-type').addEventListener('change', triggerReload);
-  document.getElementById('filter-category').addEventListener('change', triggerReload);
-  document.getElementById('filter-payment').addEventListener('change', triggerReload);
-  document.getElementById('filter-start-date').addEventListener('change', triggerReload);
-  document.getElementById('filter-end-date').addEventListener('change', triggerReload);
+  document.getElementById('search-input')?.addEventListener('input', debounce(triggerReload, 300));
+  document.getElementById('filter-type')?.addEventListener('change', (e) => {
+    syncTabStyle(e.target.value);
+    triggerReload();
+  });
+  document.getElementById('filter-category')?.addEventListener('change', triggerReload);
 
-  // Modal open/close handlers
+  // Advanced Filters Modal Handlers
+  const advModal = document.getElementById('adv-filter-modal');
+  const btnOpenAdv = document.getElementById('btn-open-adv-filters');
+  const btnCloseAdv = document.getElementById('adv-filter-close-btn');
+  const btnResetAdv = document.getElementById('adv-filter-reset-btn');
+  const btnApplyAdv = document.getElementById('adv-filter-apply-btn');
+
+  const updateAdvBadge = () => {
+    const payment = document.getElementById('filter-payment')?.value;
+    const start = document.getElementById('filter-start-date')?.value;
+    const end = document.getElementById('filter-end-date')?.value;
+
+    const isActive = Boolean(payment || start || end);
+    const dot = document.getElementById('adv-filter-active-dot');
+    if (dot) dot.style.display = isActive ? 'inline-block' : 'none';
+    if (btnOpenAdv) {
+      if (isActive) btnOpenAdv.classList.add('active');
+      else btnOpenAdv.classList.remove('active');
+    }
+  };
+
+  btnOpenAdv?.addEventListener('click', () => advModal.classList.add('active'));
+  btnCloseAdv?.addEventListener('click', () => advModal.classList.remove('active'));
+
+  btnResetAdv?.addEventListener('click', () => {
+    const paymentSel = document.getElementById('filter-payment');
+    const startInput = document.getElementById('filter-start-date');
+    const endInput = document.getElementById('filter-end-date');
+
+    if (paymentSel) paymentSel.value = '';
+    if (startInput) startInput.value = '';
+    if (endInput) endInput.value = '';
+
+    updateAdvBadge();
+    advModal.classList.remove('active');
+    triggerReload();
+  });
+
+  btnApplyAdv?.addEventListener('click', () => {
+    updateAdvBadge();
+    advModal.classList.remove('active');
+    triggerReload();
+  });
+
+  // Tab Switcher Handlers
+  const tabAll = document.getElementById('tab-tx-all');
+  const tabIncome = document.getElementById('tab-tx-income');
+  const tabExpense = document.getElementById('tab-tx-expense');
+  const filterTypeSelect = document.getElementById('filter-type');
+
+  tabAll?.addEventListener('click', () => {
+    filterTypeSelect.value = '';
+    syncTabStyle('');
+    triggerReload();
+  });
+
+  tabIncome?.addEventListener('click', () => {
+    filterTypeSelect.value = 'INCOME';
+    syncTabStyle('INCOME');
+    triggerReload();
+  });
+
+  tabExpense?.addEventListener('click', () => {
+    filterTypeSelect.value = 'EXPENSE';
+    syncTabStyle('EXPENSE');
+    triggerReload();
+  });
+
+  function syncTabStyle(type) {
+    if (tabAll) tabAll.className = type === '' ? 'tx-tab-btn active-all' : 'tx-tab-btn';
+    if (tabIncome) tabIncome.className = type === 'INCOME' ? 'tx-tab-btn active-income' : 'tx-tab-btn';
+    if (tabExpense) tabExpense.className = type === 'EXPENSE' ? 'tx-tab-btn active-expense' : 'tx-tab-btn';
+  }
+
+  // Modal open/close handlers for Add/Edit Transaction
   const modal = document.getElementById('tx-modal');
   const openModal = (tx = null) => {
     editingTxId = tx ? tx.id : null;
@@ -177,17 +317,17 @@ export async function renderTransactionsView(container, queryParams = {}) {
     editingTxId = null;
   };
 
-  document.getElementById('btn-add-tx').addEventListener('click', () => openModal());
-  document.getElementById('modal-close-btn').addEventListener('click', closeModal);
-  document.getElementById('modal-cancel-btn').addEventListener('click', closeModal);
+  document.getElementById('btn-add-tx')?.addEventListener('click', () => openModal());
+  document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
+  document.getElementById('modal-cancel-btn')?.addEventListener('click', closeModal);
 
   // Filter category dropdown on type change inside modal
-  document.getElementById('tx-type').addEventListener('change', (e) => {
+  document.getElementById('tx-type')?.addEventListener('change', (e) => {
     updateCategorySelectForType(e.target.value);
   });
 
   // Modal Form Submit
-  document.getElementById('tx-form').addEventListener('submit', async (e) => {
+  document.getElementById('tx-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('modal-error');
     errorDiv.style.display = 'none';
@@ -215,7 +355,6 @@ export async function renderTransactionsView(container, queryParams = {}) {
     }
   });
 
-  // Check if query params triggered quick add modal
   if (queryParams.action === 'new') {
     openModal();
   }
@@ -225,45 +364,56 @@ export async function renderTransactionsView(container, queryParams = {}) {
 
 function populateCategoryDropdowns(categories) {
   const filterCatSelect = document.getElementById('filter-category');
-  filterCatSelect.innerHTML = `<option value="">All Categories</option>` + 
-    categories.map(c => `<option value="${c.id}">${escapeHTML(c.name)} (${c.type})</option>`).join('');
-
+  if (filterCatSelect) {
+    filterCatSelect.innerHTML = `<option value="">All Categories</option>` + 
+      categories.map(c => `<option value="${c.id}">${escapeHTML(c.name)} (${c.type})</option>`).join('');
+  }
   updateCategorySelectForType('EXPENSE');
 }
 
 function updateCategorySelectForType(type) {
   const txCatSelect = document.getElementById('tx-category');
-  const filtered = currentCategories.filter(c => c.type === type);
-  txCatSelect.innerHTML = filtered.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+  if (txCatSelect) {
+    const filtered = currentCategories.filter(c => c.type === type);
+    txCatSelect.innerHTML = filtered.map(c => `<option value="${c.id}">${escapeHTML(c.name)}</option>`).join('');
+  }
 }
 
 async function loadTransactions(page, currencyCode) {
   const tableContainer = document.getElementById('tx-table-container');
   const paginationContainer = document.getElementById('pagination-container');
 
+  const startDateInput = document.getElementById('filter-start-date');
+  const endDateInput = document.getElementById('filter-end-date');
+
   const params = {
     page,
     limit: 15,
-    search: document.getElementById('search-input').value,
-    type: document.getElementById('filter-type').value,
-    category_id: document.getElementById('filter-category').value,
-    payment_method: document.getElementById('filter-payment').value,
-    start_date: document.getElementById('filter-start-date').value,
-    end_date: document.getElementById('filter-end-date').value
+    search: document.getElementById('search-input')?.value || '',
+    type: document.getElementById('filter-type')?.value || '',
+    category_id: document.getElementById('filter-category')?.value || '',
+    payment_method: document.getElementById('filter-payment')?.value || '',
+    start_date: startDateInput ? startDateInput.value : '',
+    end_date: endDateInput ? endDateInput.value : ''
   };
 
   try {
     const data = await APIClient.getTransactions(params);
 
+    // Update tab count badges if available
+    const totalCount = data.pagination ? data.pagination.total : (data.transactions ? data.transactions.length : 0);
+    const tabAllCount = document.getElementById('tab-count-all');
+    if (tabAllCount) tabAllCount.textContent = `(${totalCount})`;
+
     if (!data.transactions || data.transactions.length === 0) {
-      tableContainer.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🔍</div>No transactions found matching your filters.</div>`;
+      tableContainer.innerHTML = `<div class="empty-state" style="padding:2rem;"><div class="empty-state-icon">🔍</div>No transactions found matching your filters.</div>`;
       paginationContainer.innerHTML = '';
       return;
     }
 
-    // Render Desktop Table View & Mobile Cards View (ISSUE-UI-04 Fix)
+    // Render Desktop Table View & Mobile Cards Container
     tableContainer.innerHTML = `
-      <!-- Desktop/Tablet View -->
+      <!-- Desktop Table View (>= 769px) -->
       <div class="tx-desktop-table table-responsive">
         <table class="table">
           <thead>
@@ -280,7 +430,7 @@ async function loadTransactions(page, currencyCode) {
           <tbody>
             ${data.transactions.map(tx => `
               <tr>
-                <td><strong>${tx.transaction_date}</strong></td>
+                <td><strong>${formatDateDisplay(tx.transaction_date)}</strong></td>
                 <td>
                   <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${tx.category_color || '#64748b'}; margin-right:6px;"></span>
                   ${escapeHTML(tx.category_name || 'Uncategorized')}
@@ -301,65 +451,114 @@ async function loadTransactions(page, currencyCode) {
         </table>
       </div>
 
-      <!-- Compact Mobile Cards View (< 640px) -->
-      <div class="tx-mobile-cards">
-        ${data.transactions.map(tx => `
-          <div class="tx-mobile-card">
-            <div class="tx-mobile-header">
-              <span style="font-size:0.82rem; color:var(--text-muted); font-weight:600;">${tx.transaction_date}</span>
-              <span class="badge badge-${tx.type.toLowerCase()}">${tx.type}</span>
-            </div>
+      <!-- Mobile Transaction Cards View (< 769px) -->
+      <div class="tx-cards-container tx-page-mobile-cards">
+        ${data.transactions.map(tx => {
+          const iconConfig = getCategoryIconConfig(tx.category_name, tx.type, tx.category_color);
+          const formattedDate = formatDateDisplay(tx.transaction_date);
+          const paymentLabel = tx.payment_method === 'BANK_TRANSFER' ? 'Bank Transfer' : tx.payment_method;
+          const isIncome = tx.type === 'INCOME';
 
-            <div class="tx-mobile-body">
-              <div>
-                <div style="font-weight:700; font-size:1rem; display:flex; align-items:center; gap:0.4rem;">
-                  <span style="display:inline-block; width:10px; height:10px; border-radius:50%; background:${tx.category_color || '#64748b'};"></span>
-                  ${escapeHTML(tx.category_name || 'Uncategorized')}
+          return `
+            <div class="tx-card-item">
+              <div class="tx-card-left">
+                <div class="tx-category-icon" style="background: ${iconConfig.bg};">
+                  ${iconConfig.icon}
                 </div>
-                ${tx.note ? `<div style="font-size:0.82rem; color:var(--text-muted); margin-top:0.2rem;">${escapeHTML(tx.note)}</div>` : ''}
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:1.1rem; font-weight:800; color:${tx.type === 'INCOME' ? 'var(--income)' : 'var(--text-main)'};">
-                  ${tx.type === 'INCOME' ? '+' : '-'}${formatCurrency(tx.amount, currencyCode)}
+                <div class="tx-details">
+                  <span class="tx-cat-name">${escapeHTML(tx.category_name || 'Uncategorized')}</span>
+                  <span class="tx-sub-info">${formattedDate} • ${paymentLabel}</span>
+                  <span class="tx-type-pill ${isIncome ? 'income' : 'expense'}">${isIncome ? 'Income' : 'Expense'}</span>
                 </div>
-                <div style="margin-top:0.2rem;"><span class="badge badge-${tx.payment_method.toLowerCase()}">${tx.payment_method}</span></div>
               </div>
-            </div>
 
-            <div class="tx-mobile-footer">
-              <span style="font-size:0.78rem; color:var(--text-sub);">ID: ${tx.id.substring(0, 8)}</span>
-              <div style="display:flex; gap:0.5rem;">
-                <button class="btn btn-secondary btn-edit-tx" data-id="${tx.id}" style="padding:0.3rem 0.6rem; font-size:0.78rem;">Edit</button>
-                <button class="btn btn-danger btn-delete-tx" data-id="${tx.id}" style="padding:0.3rem 0.6rem; font-size:0.78rem;">Delete</button>
+              <div class="tx-card-right">
+                <span class="tx-amount ${isIncome ? 'income' : 'expense'}">
+                  ${isIncome ? '+' : '-'}${formatCurrency(tx.amount, currencyCode)}
+                </span>
+                <button type="button" class="tx-more-btn btn-toggle-tx-menu" data-id="${tx.id}" title="Transaction options" aria-label="Transaction options">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="1.5"/>
+                    <circle cx="12" cy="5" r="1.5"/>
+                    <circle cx="12" cy="19" r="1.5"/>
+                  </svg>
+                </button>
+              </div>
+
+              <!-- Action Menu Dropdown -->
+              <div class="tx-action-dropdown" id="tx-menu-${tx.id}">
+                <button type="button" class="tx-action-item btn-edit-tx" data-id="${tx.id}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+                  <span>Edit</span>
+                </button>
+                <button type="button" class="tx-action-item delete btn-delete-tx" data-id="${tx.id}">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+                  <span>Delete</span>
+                </button>
               </div>
             </div>
-          </div>
-        `).join('')}
+          `;
+        }).join('')}
       </div>
     `;
 
-    // Render pagination
+    // Render pagination with improved state (Issue #3 Fix)
     const meta = data.pagination;
-    paginationContainer.innerHTML = `
-      <div style="font-size:0.88rem; color:var(--text-muted);">
-        Page ${meta.page} of ${meta.total_pages} (${meta.total} total entries)
-      </div>
-      <div style="display:flex; gap:0.5rem;">
-        <button class="btn btn-secondary" id="prev-page" ${meta.page <= 1 ? 'disabled' : ''}>Previous</button>
-        <button class="btn btn-secondary" id="next-page" ${meta.page >= meta.total_pages ? 'disabled' : ''}>Next</button>
-      </div>
-    `;
+    const totalPages = meta.total_pages || 1;
+    const currentPageNum = meta.page || 1;
 
-    document.getElementById('prev-page')?.addEventListener('click', () => {
-      if (meta.page > 1) loadTransactions(meta.page - 1, currencyCode);
+    if (totalPages <= 1) {
+      paginationContainer.innerHTML = `
+        <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600; text-align:center; width:100%;">
+          Page 1 of 1 (${meta.total} total ${meta.total === 1 ? 'entry' : 'entries'})
+        </div>
+      `;
+    } else {
+      const isPrevDisabled = currentPageNum <= 1;
+      const isNextDisabled = currentPageNum >= totalPages;
+
+      paginationContainer.innerHTML = `
+        <div style="font-size:0.85rem; color:var(--text-muted); font-weight:600;">
+          Page ${currentPageNum} of ${totalPages} (${meta.total} total entries)
+        </div>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" id="prev-page" style="padding:0.4rem 0.85rem; font-size:0.82rem; ${isPrevDisabled ? 'opacity:0.45; pointer-events:none;' : ''}" ${isPrevDisabled ? 'disabled' : ''}>Previous</button>
+          <button class="btn btn-secondary" id="next-page" style="padding:0.4rem 0.85rem; font-size:0.82rem; ${isNextDisabled ? 'opacity:0.45; pointer-events:none;' : ''}" ${isNextDisabled ? 'disabled' : ''}>Next</button>
+        </div>
+      `;
+
+      if (!isPrevDisabled) {
+        document.getElementById('prev-page')?.addEventListener('click', () => loadTransactions(currentPageNum - 1, currencyCode));
+      }
+      if (!isNextDisabled) {
+        document.getElementById('next-page')?.addEventListener('click', () => loadTransactions(currentPageNum + 1, currencyCode));
+      }
+    }
+
+    // Toggle Action Dropdown Menus for Mobile Cards
+    tableContainer.querySelectorAll('.btn-toggle-tx-menu').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const txId = btn.dataset.id;
+        const menu = document.getElementById(`tx-menu-${txId}`);
+        // Close other open menus
+        document.querySelectorAll('.tx-action-dropdown').forEach(m => {
+          if (m !== menu) m.classList.remove('active');
+        });
+        if (menu) menu.classList.toggle('active');
+      });
     });
-    document.getElementById('next-page')?.addEventListener('click', () => {
-      if (meta.page < meta.total_pages) loadTransactions(meta.page + 1, currencyCode);
+
+    // Close action dropdowns when clicking outside
+    document.addEventListener('click', () => {
+      document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
     });
 
     // Attach Edit Action Listener to both desktop & mobile views
     tableContainer.querySelectorAll('.btn-edit-tx').forEach(btn => {
-      btn.addEventListener('click', () => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
         const tx = data.transactions.find(t => t.id === btn.dataset.id);
         if (tx) {
           document.getElementById('tx-type').value = tx.type;
@@ -378,7 +577,9 @@ async function loadTransactions(page, currencyCode) {
 
     // Attach Delete Action Listener to both desktop & mobile views
     tableContainer.querySelectorAll('.btn-delete-tx').forEach(btn => {
-      btn.addEventListener('click', async () => {
+      btn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
         if (confirm('Are you sure you want to delete this transaction record?')) {
           try {
             await APIClient.deleteTransaction(btn.dataset.id);
@@ -391,8 +592,89 @@ async function loadTransactions(page, currencyCode) {
     });
 
   } catch (err) {
-    tableContainer.innerHTML = `<div class="empty-state">Failed to load transactions. Please try again.</div>`;
+    console.error(err);
+    tableContainer.innerHTML = `<div class="empty-state" style="padding:2rem;">Failed to load transactions. Please try again.</div>`;
   }
+}
+
+function getCategoryIconConfig(categoryName, type, customColor) {
+  const name = (categoryName || '').toLowerCase();
+
+  if (name.includes('dining') || name.includes('food')) {
+    return {
+      bg: 'linear-gradient(135deg, #ec4899, #db2777)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v16"/><path d="M9 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M6 2v16"/></svg>`
+    };
+  }
+  if (name.includes('grocer') || name.includes('daily')) {
+    return {
+      bg: 'linear-gradient(135deg, #f97316, #ea580c)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
+    };
+  }
+  if (name.includes('health') || name.includes('medical')) {
+    return {
+      bg: 'linear-gradient(135deg, #06b6d4, #0891b2)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+    };
+  }
+  if (name.includes('housing') || name.includes('rent')) {
+    return {
+      bg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+    };
+  }
+  if (name.includes('utilit') || name.includes('bill')) {
+    return {
+      bg: 'linear-gradient(135deg, #a855f7, #9333ea)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+    };
+  }
+  if (name.includes('shopping') || name.includes('apparel')) {
+    return {
+      bg: 'linear-gradient(135deg, #eab308, #ca8a04)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>`
+    };
+  }
+  if (name.includes('transport') || name.includes('fuel')) {
+    return {
+      bg: 'linear-gradient(135deg, #3b82f6, #2563eb)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>`
+    };
+  }
+  if (name.includes('freelance') || name.includes('consulting') || name.includes('salary')) {
+    return {
+      bg: 'linear-gradient(135deg, #10b981, #059669)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`
+    };
+  }
+  if (name.includes('invest') || name.includes('dividend')) {
+    return {
+      bg: 'linear-gradient(135deg, #14b8a6, #0d9488)',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>`
+    };
+  }
+
+  const color = customColor || (type === 'EXPENSE' ? '#6366f1' : '#10b981');
+  return {
+    bg: color,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`
+  };
+}
+
+function formatDateDisplay(isoDateStr) {
+  if (!isoDateStr) return '';
+  try {
+    const parts = isoDateStr.split('-');
+    if (parts.length === 3) {
+      const year = parts[0];
+      const monthIdx = parseInt(parts[1], 10) - 1;
+      const day = parseInt(parts[2], 10);
+      const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return `${day} ${months[monthIdx] || ''} ${year}`;
+    }
+  } catch (e) {}
+  return isoDateStr;
 }
 
 function debounce(func, wait) {

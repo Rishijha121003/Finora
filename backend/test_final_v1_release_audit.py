@@ -2,6 +2,7 @@ import urllib.request
 import urllib.error
 import json
 import uuid
+import datetime
 from decimal import Decimal
 
 BASE_URL = "http://localhost:8000/api/v1"
@@ -91,25 +92,26 @@ def run_final_audit():
 
     # TEST 5: Transactions Creation & Decimal Precision
     print("\n5. Testing Multiple Transactions (CASH, UPI, CARD, BANK_TRANSFER) & Decimal Precision...")
+    today_str = datetime.date.today().isoformat()
     # Add Income 1: 150000.50 (BANK_TRANSFER)
     status1, _, tx1 = request("/transactions", method="POST", token=token_user1, data={
         "amount": 150000.50, "type": "INCOME", "category_id": cat_inc_id,
-        "transaction_date": "2026-07-18", "payment_method": "BANK_TRANSFER", "note": "Client Project Payout"
+        "transaction_date": today_str, "payment_method": "BANK_TRANSFER", "note": "Client Project Payout"
     })
     # Add Expense 1: 35000.25 (UPI)
     status2, _, tx2 = request("/transactions", method="POST", token=token_user1, data={
         "amount": 35000.25, "type": "EXPENSE", "category_id": cat_exp_id,
-        "transaction_date": "2026-07-18", "payment_method": "UPI", "note": "AWS Infrastructure"
+        "transaction_date": today_str, "payment_method": "UPI", "note": "AWS Infrastructure"
     })
     # Add Expense 2: 10250.00 (CARD)
     status3, _, tx3 = request("/transactions", method="POST", token=token_user1, data={
         "amount": 10250.00, "type": "EXPENSE", "category_id": cat_exp_id,
-        "transaction_date": "2026-07-18", "payment_method": "CARD", "note": "Office Hardware"
+        "transaction_date": today_str, "payment_method": "CARD", "note": "Office Hardware"
     })
     # Add Expense 3: 5000.00 (CASH)
     status4, _, tx4 = request("/transactions", method="POST", token=token_user1, data={
         "amount": 5000.00, "type": "EXPENSE", "category_id": cat_exp_id,
-        "transaction_date": "2026-07-18", "payment_method": "CASH", "note": "Petty Cash Supplies"
+        "transaction_date": today_str, "payment_method": "CASH", "note": "Petty Cash Supplies"
     })
 
     if status1 == 201 and status2 == 201 and status3 == 201 and status4 == 201:
