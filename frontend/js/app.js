@@ -1,9 +1,9 @@
 import { authManager } from './auth.js';
 import { renderAuthView } from './views/authView.js';
-import { renderDashboardView } from './views/dashboardView.js?v=1.2.1';
-import { renderTransactionsView } from './views/transactionsView.js?v=1.2.1';
-import { renderCategoriesView } from './views/categoriesView.js?v=1.2.1';
-import { renderProfileView } from './views/profileView.js?v=1.2.1';
+import { renderDashboardView } from './views/dashboardView.js?v=1.3.0';
+import { renderTransactionsView } from './views/transactionsView.js?v=1.3.0';
+import { renderCategoriesView } from './views/categoriesView.js?v=1.3.0';
+import { renderProfileView } from './views/profileView.js?v=1.3.0';
 import { renderLandingView } from './views/landingView.js';
 import APIClient from './api.js';
 
@@ -27,6 +27,9 @@ class App {
     window.addEventListener('auth:unauthorized', () => {
       authManager.logout();
     });
+
+    // Initialize PWA Offline Banner Handler
+    this.initOfflineHandler();
 
     // Close mobile menu dropdown on outside click
     document.addEventListener('click', (e) => {
@@ -54,7 +57,7 @@ class App {
       <!-- Top Navbar (Desktop & Mobile Brand / Toggle) -->
       <nav class="navbar">
         <a href="#dashboard" class="brand">
-          <img src="assets/logo.png?v=1.2.1" class="brand-logo-img" alt="Finora Logo" />
+          <img src="assets/logo.png?v=1.3.0" class="brand-logo-img" alt="Finora Logo" />
           <span>Finora</span>
         </a>
 
@@ -215,7 +218,7 @@ class App {
           <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-bottom:0.2rem;">Finora</h3>
           <p style="font-size:0.85rem; font-weight:600; color:var(--primary); margin-bottom:0.75rem;">Personal Finance Management Platform</p>
           <div style="display:inline-block; font-size:0.75rem; font-weight:700; color:var(--text-main); background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:1rem;">
-            Version v1.2.1
+            Version v1.3.0
           </div>
           <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:1.2rem;">
             Track your income, expenses, and financial activity in one simple place.
@@ -294,12 +297,14 @@ class App {
         try {
           await APIClient.updateProfile({ currency_code: newCurrency });
           authManager.currentUser.currency_code = newCurrency;
+          if (window.showToast) window.showToast(`Currency changed to ${newCurrency}`, 'success');
           this.handleRoute(); // Refresh view with new currency symbol
         } catch (err) {
           // Revert both dropdowns to previous persisted currency on failure
           if (headerSelect) headerSelect.value = previousCurrency;
           if (mobileSelect) mobileSelect.value = previousCurrency;
-          alert('Failed to update currency preference.');
+          if (window.showToast) window.showToast('Failed to update currency preference, reverting...', 'error');
+          else alert('Failed to update currency preference.');
         }
       };
 
@@ -310,7 +315,14 @@ class App {
       const feedbackModal = document.getElementById('feedback-modal');
       const openFeedbackModal = () => {
         if (mobileDropdown) mobileDropdown.classList.remove('active');
-        if (feedbackModal) feedbackModal.classList.add('active');
+        if (feedbackModal) {
+          const dialog = feedbackModal.querySelector('.modal-dialog') || feedbackModal.querySelector('.modal');
+          if (dialog) {
+            if (window.innerWidth <= 640) dialog.classList.add('modal-dialog-bottom-sheet');
+            else dialog.classList.remove('modal-dialog-bottom-sheet');
+          }
+          feedbackModal.classList.add('active');
+        }
       };
       const closeFeedbackModal = () => {
         if (feedbackModal) feedbackModal.classList.remove('active');
@@ -364,6 +376,7 @@ class App {
           alertBox.style.color = '#ef4444';
           alertBox.style.border = '1px solid #ef4444';
           alertBox.textContent = 'Feedback message must be at least 5 characters long.';
+          if (window.showToast) window.showToast('Feedback message must be at least 5 characters.', 'warning');
           return;
         }
 
@@ -379,6 +392,7 @@ class App {
             would_use_again
           });
 
+          if (window.showToast) window.showToast('Thank you! Your feedback has been submitted.', 'success');
           alertBox.style.display = 'block';
           alertBox.style.background = 'rgba(16, 185, 129, 0.15)';
           alertBox.style.color = '#10b981';
@@ -394,8 +408,7 @@ class App {
             closeFeedbackModal();
             submitBtn.disabled = false;
             submitBtn.textContent = 'Submit Feedback';
-          }, 1800);
-
+          }, 1500);
         } catch (err) {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Submit Feedback';
@@ -404,6 +417,7 @@ class App {
           alertBox.style.color = '#ef4444';
           alertBox.style.border = '1px solid #ef4444';
           alertBox.textContent = err.message || 'Failed to submit feedback. Please try again.';
+          if (window.showToast) window.showToast(err.message || 'Failed to submit feedback.', 'error');
         }
       });
     }
@@ -444,12 +458,98 @@ class App {
     }
   }
 
+  initOfflineHandler() {
+    let banner = document.getElementById('pwa-offline-banner');
+    if (!banner) {
+      banner = document.createElement('div');
+      banner.id = 'pwa-offline-banner';
+      banner.className = 'pwa-offline-banner';
+      banner.innerHTML = `
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="1" y1="1" x2="23" y2="23"/>
+          <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"/>
+          <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"/>
+          <path d="M10.71 5.05A16 16 0 0 1 22.58 9"/>
+          <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"/>
+          <path d="M8.53 16.11a6 6 0 0 1 6.95 0"/>
+          <line x1="12" y1="20" x2="12.01" y2="20"/>
+        </svg>
+        <span>You are currently offline. Connect to the internet to update financial data.</span>
+      `;
+      document.body.appendChild(banner);
+    }
+
+    const updateStatus = () => {
+      if (!navigator.onLine) {
+        banner.classList.add('active');
+      } else {
+        banner.classList.remove('active');
+      }
+    };
+
+    window.addEventListener('online', updateStatus);
+    window.addEventListener('offline', updateStatus);
+    updateStatus();
+  }
+
+  static showToast(message, type = 'success') {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.className = 'toast-container';
+      document.body.appendChild(container);
+    }
+
+    const toast = document.createElement('div');
+    toast.className = `toast toast-${type}`;
+    
+    const iconMap = {
+      success: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--income)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      error: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--expense)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+      warning: '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--warning)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+    };
+
+    toast.innerHTML = `${iconMap[type] || iconMap.success}<span>${message}</span>`;
+    container.appendChild(toast);
+
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(1rem)';
+      toast.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+      setTimeout(() => toast.remove(), 300);
+    }, 3500);
+  }
+
   escapeHTML(str) {
     return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
 }
 
+window.showToast = App.showToast;
+
 document.addEventListener('DOMContentLoaded', () => {
   const app = new App();
   app.init();
+
+  // Register Service Worker for PWA Capability
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/sw.js')
+        .then((reg) => {
+          console.log('[Finora PWA] Service Worker registered successfully scope:', reg.scope);
+        })
+        .catch((err) => {
+          console.warn('[Finora PWA] Service Worker registration failed:', err);
+        });
+    });
+  }
+
+  // Handle PWA Install Prompt
+  window.deferredPWAInstallPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    window.deferredPWAInstallPrompt = e;
+    window.dispatchEvent(new Event('pwa:installable'));
+  });
 });

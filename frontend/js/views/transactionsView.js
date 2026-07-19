@@ -295,6 +295,16 @@ export async function renderTransactionsView(container, queryParams = {}) {
     document.getElementById('modal-title').textContent = tx ? 'Edit Transaction' : 'Add New Transaction';
     document.getElementById('modal-error').style.display = 'none';
 
+    // Apply mobile bottom-sheet class if viewport <= 640px
+    const modalDialog = modal.querySelector('.modal-dialog') || modal.querySelector('.modal');
+    if (modalDialog) {
+      if (window.innerWidth <= 640) {
+        modalDialog.classList.add('modal-dialog-bottom-sheet');
+      } else {
+        modalDialog.classList.remove('modal-dialog-bottom-sheet');
+      }
+    }
+
     if (tx) {
       document.getElementById('tx-type').value = tx.type;
       updateCategorySelectForType(tx.type);
@@ -344,14 +354,17 @@ export async function renderTransactionsView(container, queryParams = {}) {
     try {
       if (editingTxId) {
         await APIClient.updateTransaction(editingTxId, payload);
+        if (window.showToast) window.showToast('Transaction updated successfully!', 'success');
       } else {
         await APIClient.createTransaction(payload);
+        if (window.showToast) window.showToast('Transaction added successfully!', 'success');
       }
       closeModal();
       await loadTransactions(currentPage, currencyCode);
     } catch (err) {
       errorDiv.textContent = err.message || 'Failed to save transaction.';
       errorDiv.style.display = 'block';
+      if (window.showToast) window.showToast(err.message || 'Failed to save transaction.', 'error');
     }
   });
 
@@ -583,9 +596,11 @@ async function loadTransactions(page, currencyCode) {
         if (confirm('Are you sure you want to delete this transaction record?')) {
           try {
             await APIClient.deleteTransaction(btn.dataset.id);
+            if (window.showToast) window.showToast('Transaction deleted', 'info');
             await loadTransactions(page, currencyCode);
           } catch (err) {
-            alert(err.message || 'Failed to delete transaction.');
+            if (window.showToast) window.showToast(err.message || 'Failed to delete transaction.', 'error');
+            else alert(err.message || 'Failed to delete transaction.');
           }
         }
       });

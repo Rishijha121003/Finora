@@ -41,3 +41,6 @@ Thumbs.db
 # Node / Frontend
 node_modules/
 npm-debug.log*
+
+# Scratch & Temporary Tools
+scratch/

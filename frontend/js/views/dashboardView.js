@@ -1,6 +1,7 @@
 import APIClient from '../api.js';
 import { formatCurrency } from '../currency.js';
 import { authManager } from '../auth.js';
+import { openTransactionModal } from '../components/transactionModal.js';
 
 export async function renderDashboardView(container) {
   const user = authManager.currentUser;
@@ -92,6 +93,27 @@ export async function renderDashboardView(container) {
         </div>
       </div>
 
+      <!-- Dashboard Budget Overview Widget (v1.3.0) -->
+      <div class="card dash-card-compact" id="budget-overview-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            <span style="font-size:0.95rem; font-weight:700;">Monthly Budget</span>
+          </div>
+          <button id="btn-manage-budget" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.65rem; font-size:0.75rem; border-radius:12px;">
+            Set Budget
+          </button>
+        </div>
+        <div id="budget-overview-container">
+          <div class="skeleton-card" style="padding:0.75rem;">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line subtitle"></div>
+          </div>
+        </div>
+      </div>
+
       <!-- Spending Overview Chart Card -->
       <div class="card dash-card-compact">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
@@ -99,7 +121,10 @@ export async function renderDashboardView(container) {
           <span style="font-size:0.75rem; font-weight:500; color:var(--text-muted);">Last 6 Months</span>
         </div>
         <div id="trend-chart-container" style="min-height:130px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div class="empty-state" style="padding:1rem;">Loading trend chart...</div>
+          <div class="skeleton-card" style="padding:0.75rem;">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line subtitle"></div>
+          </div>
         </div>
       </div>
 
@@ -157,12 +182,18 @@ export async function renderDashboardView(container) {
 
 async function loadDashboardData(timeframe, currencyCode) {
   try {
-    const data = await APIClient.getDashboardSummary(timeframe);
+    const [data, budgetSummary] = await Promise.all([
+      APIClient.getDashboardSummary(timeframe),
+      APIClient.getBudgetSummary().catch(() => null)
+    ]);
 
     // Update Stat Cards
     document.getElementById('stat-balance').textContent = formatCurrency(data.summary.current_balance, currencyCode);
     document.getElementById('stat-income').textContent = formatCurrency(data.summary.total_income, currencyCode);
     document.getElementById('stat-expense').textContent = formatCurrency(data.summary.total_expense, currencyCode);
+
+    // Render Budget Overview Widget (v1.3.0)
+    renderBudgetOverviewWidget(budgetSummary, currencyCode);
 
     // Render Trend Chart
     renderTrendChart(data.monthly_trends, currencyCode);
@@ -282,11 +313,19 @@ async function loadDashboardData(timeframe, currencyCode) {
           document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
         });
 
-        // Edit button redirects to transactions page
+        // Edit button directly opens Edit Transaction modal / bottom-sheet
         recentContainer.querySelectorAll('.btn-edit-tx').forEach(btn => {
           btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            window.location.hash = '#transactions';
+            document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
+            const txId = btn.dataset.id;
+            const targetTx = data.recent_transactions.find(t => t.id === txId);
+            openTransactionModal({
+              transaction: targetTx,
+              onSuccess: async () => {
+                await loadDashboardData(timeframe, currencyCode);
+              }
+            });
           });
         });
 
@@ -298,9 +337,11 @@ async function loadDashboardData(timeframe, currencyCode) {
             if (confirm('Are you sure you want to delete this transaction record?')) {
               try {
                 await APIClient.deleteTransaction(btn.dataset.id);
+                if (window.showToast) window.showToast('Transaction deleted', 'info');
                 await loadDashboardData(timeframe, currencyCode);
               } catch (err) {
-                alert(err.message || 'Failed to delete transaction.');
+                if (window.showToast) window.showToast(err.message || 'Failed to delete transaction.', 'error');
+                else alert(err.message || 'Failed to delete transaction.');
               }
             }
           });
@@ -309,6 +350,154 @@ async function loadDashboardData(timeframe, currencyCode) {
     }
   } catch (err) {
     console.error('Failed to load dashboard data:', err);
+  }
+}
+
+function renderBudgetOverviewWidget(summary, currencyCode) {
+  const container = document.getElementById('budget-overview-container');
+  const manageBtn = document.getElementById('btn-manage-budget');
+  if (!container) return;
+
+  if (!summary || !summary.overall_budget) {
+    container.innerHTML = `
+      <div class="dash-empty-breakdown" style="padding:0.75rem 0.5rem;">
+        <div style="font-size:0.85rem; color:var(--text-muted); font-weight:500; margin-bottom:0.4rem;">
+          No overall monthly budget set yet.
+        </div>
+        <button type="button" id="btn-create-first-budget" class="btn btn-primary btn-sm" style="font-size:0.75rem; border-radius:10px;">
+          Set Monthly Budget
+        </button>
+      </div>
+    `;
+    const firstBtn = document.getElementById('btn-create-first-budget');
+    if (firstBtn) firstBtn.onclick = () => openBudgetModal(null, currencyCode);
+    if (manageBtn) manageBtn.onclick = () => openBudgetModal(null, currencyCode);
+    return;
+  }
+
+  const ob = summary.overall_budget;
+  const spentAmount = Number(ob.current_spend) || 0;
+  const remainingAmount = Math.max(0, Number(ob.remaining_budget) || 0);
+  const percentageUsed = ob.percentage_used || 0;
+  const pctBar = Math.min(100, percentageUsed);
+
+  let statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#10b981; background:rgba(16, 185, 129, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">ON TRACK</span>`;
+  let barColor = 'var(--primary)';
+
+  if (ob.is_exceeded) {
+    statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#ef4444; background:rgba(239, 68, 68, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">EXCEEDED</span>`;
+    barColor = '#ef4444';
+  } else if (ob.is_warning) {
+    statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#f59e0b; background:rgba(245, 158, 11, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">80%+ USED</span>`;
+    barColor = '#f59e0b';
+  }
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:0.78rem; color:var(--text-muted); font-weight:500;">Monthly Limit: </span>
+          <span style="font-size:0.9rem; font-weight:700;">${formatCurrency(ob.amount, currencyCode)}</span>
+        </div>
+        ${statusBadge}
+      </div>
+
+      <div style="width:100%; height:8px; background:rgba(255,255,255,0.08); border-radius:4px; overflow:hidden;">
+        <div style="width:${pctBar}%; height:100%; background:${barColor}; transition:width 0.4s ease; border-radius:4px;"></div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted); flex-wrap:wrap; gap:0.25rem;">
+        <span><strong style="color:var(--text-main);">${formatCurrency(spentAmount, currencyCode)}</strong> of ${formatCurrency(ob.amount, currencyCode)} used (${percentageUsed}%)</span>
+        <span>Remaining: <strong style="color:${ob.is_exceeded ? '#ef4444' : '#10b981'};">${formatCurrency(remainingAmount, currencyCode)}</strong></span>
+      </div>
+    </div>
+  `;
+
+  if (manageBtn) {
+    manageBtn.textContent = 'Edit Budget';
+    manageBtn.onclick = () => openBudgetModal(ob, currencyCode);
+  }
+}
+
+function openBudgetModal(existingBudget, currencyCode) {
+  let modalEl = document.getElementById('budget-modal');
+  if (modalEl) modalEl.remove();
+
+  const currentAmt = existingBudget ? existingBudget.amount : '';
+
+  const isMobile = window.innerWidth <= 640;
+
+  modalEl = document.createElement('div');
+  modalEl.id = 'budget-modal';
+  modalEl.className = 'modal-overlay active';
+  modalEl.innerHTML = `
+    <div class="modal ${isMobile ? 'modal-dialog-bottom-sheet' : ''}" style="${isMobile ? '' : 'max-width:420px; width:100%;'}">
+      ${isMobile ? '<div class="bottom-sheet-handle"></div>' : ''}
+      <div class="modal-header">
+        <h3 class="modal-title">${existingBudget ? 'Edit Monthly Budget' : 'Set Monthly Budget'}</h3>
+        <button type="button" class="btn-close-modal" id="close-budget-modal" style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
+      </div>
+      <form id="budget-form" style="padding:0.5rem 0 0 0;">
+        <div class="form-group" style="margin-bottom:1rem;">
+          <label class="form-label" style="font-size:0.82rem; font-weight:600;">Monthly Spending Limit (${currencyCode})</label>
+          <input type="number" step="0.01" min="1" class="form-control" id="budget-amount-input" value="${currentAmt}" placeholder="e.g. 50000" required autofocus />
+        </div>
+        <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center; margin-top:1.2rem; flex-wrap:wrap;">
+          ${existingBudget ? `
+            <button type="button" id="btn-delete-budget" class="btn" style="background:transparent; color:#ef4444; border:1px solid rgba(239,68,68,0.4); padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:10px; min-height:42px; margin-right:auto;">
+              Delete
+            </button>
+          ` : ''}
+          <button type="button" class="btn btn-secondary" id="cancel-budget-btn" style="padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:10px; min-height:42px;">Cancel</button>
+          <button type="submit" class="btn btn-primary" id="save-budget-btn" style="padding:0.5rem 1rem; font-size:0.82rem; border-radius:10px; font-weight:700; min-height:42px;">Save Budget</button>
+        </div>
+      </form>
+    </div>
+  `;
+
+  document.body.appendChild(modalEl);
+
+  const closeFn = () => modalEl.remove();
+  modalEl.onclick = (e) => { if (e.target === modalEl) closeFn(); };
+  document.getElementById('close-budget-modal').onclick = closeFn;
+  document.getElementById('cancel-budget-btn').onclick = closeFn;
+
+  const form = document.getElementById('budget-form');
+  form.onsubmit = async (e) => {
+    e.preventDefault();
+    const amountVal = parseFloat(document.getElementById('budget-amount-input').value);
+    if (!amountVal || amountVal <= 0) {
+      if (window.showToast) window.showToast('Please enter a valid positive budget amount.', 'warning');
+      return;
+    }
+
+    try {
+      await APIClient.createOrUpdateBudget({
+        amount: amountVal,
+        period: 'MONTHLY'
+      });
+      if (window.showToast) window.showToast('Monthly budget saved successfully!', 'success');
+      closeFn();
+      window.location.reload();
+    } catch (err) {
+      if (window.showToast) window.showToast(err.message || 'Failed to save budget.', 'error');
+    }
+  };
+
+  const deleteBtn = document.getElementById('btn-delete-budget');
+  if (deleteBtn && existingBudget) {
+    deleteBtn.onclick = async () => {
+      if (confirm('Are you sure you want to delete your monthly budget limit?')) {
+        try {
+          await APIClient.deleteBudget(existingBudget.id);
+          if (window.showToast) window.showToast('Monthly budget deleted.', 'info');
+          closeFn();
+          window.location.reload();
+        } catch (err) {
+          if (window.showToast) window.showToast(err.message || 'Failed to delete budget.', 'error');
+        }
+      }
+    };
   }
 }
 

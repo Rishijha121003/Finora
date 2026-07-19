@@ -152,6 +152,27 @@ class APIClient {
     });
   }
 
+  // Budget Endpoints (v1.3.0)
+  static async getBudgets() {
+    return this.request('/budgets');
+  }
+
+  static async getBudgetSummary() {
+    return this.request('/budgets/summary');
+  }
+
+  static async createOrUpdateBudget(budgetData) {
+    return this.request('/budgets', {
+      method: 'POST',
+      body: JSON.stringify(budgetData)
+    });
+  }
+
+  static async deleteBudget(id) {
+    return this.request(`/budgets/${id}`, {
+      method: 'DELETE'
+    });
+  }
 }
 
 export default APIClient;

@@ -152,6 +152,16 @@ export async function renderProfileView(container) {
           </button>
         </div>
 
+        <!-- 4.5. Install Finora PWA Action Button (Visible when PWA installable) -->
+        <button type="button" id="btn-profile-install-pwa" class="btn-profile-feedback-card" style="display:none; margin-top:0.75rem; width:100%; justify-content:center; background:linear-gradient(135deg, var(--primary), #8b5cf6); color:#fff; border:none; box-shadow: 0 4px 12px rgba(99,102,241,0.3);">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="7 10 12 15 17 10"/>
+            <line x1="12" y1="15" x2="12" y2="3"/>
+          </svg>
+          <span>Install Finora App</span>
+        </button>
+
         <!-- 5. Standalone Logout Action Button -->
         <button type="button" id="btn-profile-logout" class="btn-profile-logout-card">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -166,6 +176,30 @@ export async function renderProfileView(container) {
   `;
 
   // Attach Event Handlers
+  const installBtn = document.getElementById('btn-profile-install-pwa');
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+
+  if (!isStandalone && window.deferredPWAInstallPrompt) {
+    if (installBtn) installBtn.style.display = 'inline-flex';
+  }
+
+  window.addEventListener('pwa:installable', () => {
+    if (installBtn && !isStandalone) {
+      installBtn.style.display = 'inline-flex';
+    }
+  });
+
+  installBtn?.addEventListener('click', async () => {
+    if (window.deferredPWAInstallPrompt) {
+      window.deferredPWAInstallPrompt.prompt();
+      const { outcome } = await window.deferredPWAInstallPrompt.userChoice;
+      if (outcome === 'accepted') {
+        installBtn.style.display = 'none';
+      }
+      window.deferredPWAInstallPrompt = null;
+    }
+  });
+
   document.getElementById('btn-profile-about')?.addEventListener('click', () => {
     document.getElementById('about-modal')?.classList.add('active');
   });
@@ -206,6 +240,7 @@ export async function renderProfileView(container) {
       });
       authManager.currentUser = updatedUser;
 
+      if (window.showToast) window.showToast('Profile updated successfully!', 'success');
       msgDiv.className = 'profile-alert success';
       msgDiv.textContent = 'Profile updated successfully!';
       msgDiv.style.display = 'block';
@@ -224,6 +259,7 @@ export async function renderProfileView(container) {
           </svg>
           <span>Save Changes</span>`;
       }
+      if (window.showToast) window.showToast(err.message || 'Failed to update profile.', 'error');
       msgDiv.className = 'profile-alert error';
       msgDiv.textContent = err.message || 'Failed to update profile.';
       msgDiv.style.display = 'block';

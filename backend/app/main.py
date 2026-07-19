@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from app.config import settings
 from app.database import engine, Base, SessionLocal
 from app.seed import seed_default_categories
-from app.routers import auth, categories, transactions, dashboard, feedback
+from app.routers import auth, categories, transactions, dashboard, feedback, budgets
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -46,6 +46,7 @@ app.include_router(categories.router, prefix=settings.API_V1_STR)
 app.include_router(transactions.router, prefix=settings.API_V1_STR)
 app.include_router(dashboard.router, prefix=settings.API_V1_STR)
 app.include_router(feedback.router, prefix=settings.API_V1_STR)
+app.include_router(budgets.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

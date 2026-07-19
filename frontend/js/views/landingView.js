@@ -9,7 +9,7 @@ export function renderLandingView(container, targetSection = 'landing') {
       <header class="landing-header">
         <div class="landing-nav-container">
           <a href="${isLoggedIn ? '#dashboard' : '#hero'}" class="brand">
-            <img src="assets/logo.png?v=1.2.1" class="brand-logo-img" alt="Finora Logo" />
+            <img src="assets/logo.png?v=1.3.0" class="brand-logo-img" alt="Finora Logo" />
             <span>Finora</span>
           </a>
 
@@ -45,7 +45,7 @@ export function renderLandingView(container, targetSection = 'landing') {
       <aside class="landing-drawer" id="landing-drawer" aria-hidden="true" role="dialog" aria-label="Mobile Navigation Menu">
         <div class="landing-drawer-header">
           <div class="brand">
-            <img src="assets/logo.png?v=1.2.1" class="brand-logo-img" alt="Finora Logo" />
+            <img src="assets/logo.png?v=1.3.0" class="brand-logo-img" alt="Finora Logo" />
             <span>Finora</span>
           </div>
           <button class="landing-drawer-close" id="landing-drawer-close" aria-label="Close menu">&times;</button>
@@ -271,7 +271,7 @@ export function renderLandingView(container, targetSection = 'landing') {
       <footer class="landing-footer">
         <div class="footer-container">
           <div class="footer-brand">
-            <img src="assets/logo.png?v=1.2.1" class="brand-logo-img" alt="Finora Logo" style="width:28px; height:28px;" />
+            <img src="assets/logo.png?v=1.3.0" class="brand-logo-img" alt="Finora Logo" style="width:28px; height:28px;" />
             <span style="font-weight:700; color:var(--text-main);">Finora</span>
           </div>
 

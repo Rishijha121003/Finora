@@ -108,7 +108,17 @@ export async function renderCategoriesView(container) {
 
   // Attach Modal Handlers
   const modal = document.getElementById('cat-modal');
-  document.getElementById('btn-add-category')?.addEventListener('click', () => modal.classList.add('active'));
+  document.getElementById('btn-add-category')?.addEventListener('click', () => {
+    const dialog = modal.querySelector('.modal-dialog') || modal.querySelector('.modal');
+    if (dialog) {
+      if (window.innerWidth <= 640) {
+        dialog.classList.add('modal-dialog-bottom-sheet');
+      } else {
+        dialog.classList.remove('modal-dialog-bottom-sheet');
+      }
+    }
+    modal.classList.add('active');
+  });
   document.getElementById('cat-modal-close-btn')?.addEventListener('click', () => modal.classList.remove('active'));
   document.getElementById('cat-modal-cancel-btn')?.addEventListener('click', () => modal.classList.remove('active'));
 
@@ -157,12 +167,14 @@ export async function renderCategoriesView(container) {
 
     try {
       await APIClient.createCategory(payload);
+      if (window.showToast) window.showToast('Category created successfully!', 'success');
       modal.classList.remove('active');
       document.getElementById('cat-form').reset();
       await loadCategoryLists();
     } catch (err) {
       errorDiv.textContent = err.message || 'Failed to create category.';
       errorDiv.style.display = 'block';
+      if (window.showToast) window.showToast(err.message || 'Failed to create category.', 'error');
     }
   });
 
@@ -223,9 +235,11 @@ async function loadCategoryLists() {
         if (confirm('Delete this custom category? Associated transactions will be moved to Uncategorized Expense.')) {
           try {
             await APIClient.deleteCategory(btn.dataset.id);
+            if (window.showToast) window.showToast('Category deleted', 'info');
             await loadCategoryLists();
           } catch (err) {
-            alert(err.message || 'Failed to delete category.');
+            if (window.showToast) window.showToast(err.message || 'Failed to delete category.', 'error');
+            else alert(err.message || 'Failed to delete category.');
           }
         }
       });

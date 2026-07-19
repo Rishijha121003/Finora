@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "Finora Personal Finance API"
-    VERSION: str = "1.2.1"
+    VERSION: str = "1.3.0"
     API_V1_STR: str = "/api/v1"
     
     # PostgreSQL connection string
