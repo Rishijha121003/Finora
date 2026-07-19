@@ -1,7 +1,7 @@
 import APIClient from '../api.js';
 import { authManager } from '../auth.js';
 
-export async function openTransactionModal({ transaction = null, onSuccess = null } = {}) {
+export async function openTransactionModal({ transaction = null, initialData = null, onSuccess = null } = {}) {
   const currencyCode = authManager.getUserCurrency();
   let modalEl = document.getElementById('global-tx-modal');
   if (modalEl) modalEl.remove();
@@ -16,6 +16,7 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
   const isMobile = window.innerWidth <= 640;
   const isEdit = !!transaction;
   const editingTxId = transaction ? transaction.id : null;
+  const prefill = transaction || initialData;
 
   modalEl = document.createElement('div');
   modalEl.id = 'global-tx-modal';
@@ -24,7 +25,7 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
     <div class="modal ${isMobile ? 'modal-dialog-bottom-sheet' : ''}" style="${isMobile ? '' : 'max-width:520px; width:100%;'}">
       ${isMobile ? '<div class="bottom-sheet-handle"></div>' : ''}
       <div class="modal-header">
-        <h3 class="modal-title">${isEdit ? 'Edit Transaction' : 'Add New Transaction'}</h3>
+        <h3 class="modal-title">${isEdit ? 'Edit Transaction' : (initialData ? 'Quick Add Shortcut' : 'Add New Transaction')}</h3>
         <button type="button" class="btn-close-modal" id="gtx-close-btn" style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
       <form id="gtx-form" style="padding:0.5rem 0 0 0;">
@@ -40,7 +41,7 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
           </div>
           <div class="form-group">
             <label class="form-label" style="font-size:0.82rem; font-weight:600;">Amount (${currencyCode})</label>
-            <input type="number" step="0.01" min="0.01" id="gtx-amount" class="form-control" placeholder="0.00" value="${transaction ? transaction.amount : ''}" required />
+            <input type="number" step="0.01" min="0.01" id="gtx-amount" class="form-control" placeholder="0.00" value="${prefill ? prefill.amount : ''}" required />
           </div>
         </div>
 
@@ -68,7 +69,7 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
 
         <div class="form-group" style="margin-bottom:1rem;">
           <label class="form-label" style="font-size:0.82rem; font-weight:600;">Note / Description (Optional)</label>
-          <textarea id="gtx-note" class="form-control" rows="2" placeholder="Dinner with friends, Salary credit...">${transaction ? (transaction.note || '') : ''}</textarea>
+          <textarea id="gtx-note" class="form-control" rows="2" placeholder="Dinner with friends, Salary credit...">${prefill ? (prefill.note || prefill.name || '') : ''}</textarea>
         </div>
 
         <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:1.5rem;">
@@ -85,9 +86,9 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
   const catSelect = document.getElementById('gtx-category');
   const paymentSelect = document.getElementById('gtx-payment');
 
-  if (transaction) {
-    typeSelect.value = transaction.type;
-    paymentSelect.value = transaction.payment_method || 'UPI';
+  if (prefill) {
+    typeSelect.value = prefill.type || 'EXPENSE';
+    paymentSelect.value = prefill.payment_method || 'UPI';
   } else {
     typeSelect.value = 'EXPENSE';
     paymentSelect.value = 'UPI';
@@ -96,8 +97,8 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
   const updateCategoryOptions = (selectedType) => {
     const filtered = categories.filter(c => c.type === selectedType);
     catSelect.innerHTML = filtered.map(c => `<option value="${c.id}">${c.name}</option>`).join('');
-    if (transaction && transaction.type === selectedType) {
-      catSelect.value = transaction.category_id;
+    if (prefill && prefill.category_id) {
+      catSelect.value = prefill.category_id;
     }
   };
 
@@ -106,6 +107,7 @@ export async function openTransactionModal({ transaction = null, onSuccess = nul
   typeSelect.addEventListener('change', (e) => {
     updateCategoryOptions(e.target.value);
   });
+
 
   const closeFn = () => modalEl.remove();
   modalEl.onclick = (e) => { if (e.target === modalEl) closeFn(); };

@@ -3,7 +3,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models.user import User
-from app.schemas.auth import UserRegister, UserLogin, UserProfileUpdate, UserResponse, Token
+from app.schemas.auth import (
+    UserRegister, UserLogin, UserProfileUpdate, UserResponse, Token,
+    ChangePasswordRequest, DeleteAccountRequest
+)
 from app.utils.security import hash_password, verify_password, create_access_token
 from app.routers.deps import get_current_user
 
@@ -73,3 +76,36 @@ def update_profile(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+@router.post("/change-password")
+def change_password(
+    req: ChangePasswordRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(req.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect current password."
+        )
+    
+    current_user.password_hash = hash_password(req.new_password)
+    db.commit()
+    return {"message": "Password updated successfully."}
+
+@router.delete("/account")
+def delete_account(
+    req: DeleteAccountRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if not verify_password(req.password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Incorrect password. Account deletion aborted."
+        )
+    
+    db.delete(current_user)
+    db.commit()
+    return {"message": "Account and all associated data permanently deleted."}
+

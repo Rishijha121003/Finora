@@ -110,6 +110,17 @@ export async function renderTransactionsView(container, queryParams = {}) {
           </select>
         </div>
 
+        <div class="form-group" style="margin-bottom:0.85rem;">
+          <label style="font-size:0.82rem; font-weight:600; color:var(--text-muted); display:block; margin-bottom:0.4rem;">Date Presets</label>
+          <div style="display:flex; flex-wrap:wrap; gap:0.35rem;" id="date-preset-buttons">
+            <button type="button" class="btn btn-secondary btn-date-preset" data-preset="all" style="padding:0.3rem 0.6rem; font-size:0.75rem;">All</button>
+            <button type="button" class="btn btn-secondary btn-date-preset" data-preset="today" style="padding:0.3rem 0.6rem; font-size:0.75rem;">Today</button>
+            <button type="button" class="btn btn-secondary btn-date-preset" data-preset="week" style="padding:0.3rem 0.6rem; font-size:0.75rem;">This Week</button>
+            <button type="button" class="btn btn-secondary btn-date-preset" data-preset="month" style="padding:0.3rem 0.6rem; font-size:0.75rem;">This Month</button>
+            <button type="button" class="btn btn-secondary btn-date-preset" data-preset="last_month" style="padding:0.3rem 0.6rem; font-size:0.75rem;">Last Month</button>
+          </div>
+        </div>
+
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:0.75rem; margin-bottom:1.25rem;">
           <div class="form-group">
             <label>From Date</label>
@@ -120,6 +131,7 @@ export async function renderTransactionsView(container, queryParams = {}) {
             <input type="date" id="filter-end-date" class="form-control" />
           </div>
         </div>
+
 
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
           <button type="button" class="btn btn-secondary" id="adv-filter-reset-btn" style="flex:1;">Reset</button>
@@ -252,7 +264,47 @@ export async function renderTransactionsView(container, queryParams = {}) {
     triggerReload();
   });
 
+  container.querySelectorAll('.btn-date-preset').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const preset = btn.dataset.preset;
+      const startDateInput = document.getElementById('filter-start-date');
+      const endDateInput = document.getElementById('filter-end-date');
+      const today = new Date();
+      const formatYMD = (d) => {
+        const yr = d.getFullYear();
+        const mo = String(d.getMonth() + 1).padStart(2, '0');
+        const da = String(d.getDate()).padStart(2, '0');
+        return `${yr}-${mo}-${da}`;
+      };
+
+      if (preset === 'all') {
+        if (startDateInput) startDateInput.value = '';
+        if (endDateInput) endDateInput.value = '';
+      } else if (preset === 'today') {
+        const ymd = formatYMD(today);
+        if (startDateInput) startDateInput.value = ymd;
+        if (endDateInput) endDateInput.value = ymd;
+      } else if (preset === 'week') {
+        const day = today.getDay();
+        const diffToMon = today.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(new Date().setDate(diffToMon));
+        if (startDateInput) startDateInput.value = formatYMD(monday);
+        if (endDateInput) endDateInput.value = formatYMD(new Date());
+      } else if (preset === 'month') {
+        const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+        if (startDateInput) startDateInput.value = formatYMD(firstDay);
+        if (endDateInput) endDateInput.value = formatYMD(new Date());
+      } else if (preset === 'last_month') {
+        const firstDayLastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastDayLastMonth = new Date(today.getFullYear(), today.getMonth(), 0);
+        if (startDateInput) startDateInput.value = formatYMD(firstDayLastMonth);
+        if (endDateInput) endDateInput.value = formatYMD(lastDayLastMonth);
+      }
+    });
+  });
+
   btnApplyAdv?.addEventListener('click', () => {
+
     updateAdvBadge();
     advModal.classList.remove('active');
     triggerReload();

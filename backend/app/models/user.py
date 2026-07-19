@@ -19,4 +19,6 @@ class User(Base):
     transactions = relationship("Transaction", back_populates="user", cascade="all, delete-orphan")
     feedback_entries = relationship("Feedback", back_populates="user", cascade="all, delete-orphan")
     budgets = relationship("Budget", back_populates="user", cascade="all, delete-orphan")
+    favorites = relationship("FavoriteTransaction", back_populates="user", cascade="all, delete-orphan")
+
 

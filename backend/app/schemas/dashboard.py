@@ -26,3 +26,13 @@ class DashboardSummaryResponse(BaseModel):
     category_breakdown: List[CategoryBreakdownItem]
     monthly_trends: List[MonthlyTrendItem]
     recent_transactions: List[TransactionResponse]
+
+class DailySafeSpendResponse(BaseModel):
+    has_budget: bool
+    daily_safe_spend: Decimal
+    remaining_budget: Decimal
+    month_total_budget: Decimal
+    current_month_spent: Decimal
+    remaining_days: int
+    is_budget_exceeded: bool
+

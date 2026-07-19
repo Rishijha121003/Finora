@@ -2,6 +2,8 @@ import APIClient from '../api.js';
 import { formatCurrency } from '../currency.js';
 import { authManager } from '../auth.js';
 import { openTransactionModal } from '../components/transactionModal.js';
+import { openManageFavoritesModal } from '../components/manageFavoritesModal.js';
+
 
 export async function renderDashboardView(container) {
   const user = authManager.currentUser;
@@ -49,7 +51,14 @@ export async function renderDashboardView(container) {
           </div>
         </div>
         <div class="dash-balance-amount" id="stat-balance">${formatCurrency(0, currencyCode)}</div>
+        <div id="daily-safe-spend-insight" style="font-size:0.85rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem; border-top:1px solid var(--glass-border); padding-top:0.6rem; margin-top:0.6rem;">
+          <span style="display:flex; align-items:center; gap:0.25rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Safe to spend:</span>
+          <span id="stat-daily-safe-spend" style="color:var(--text-main); font-weight:600;">--/day</span>
+          <span id="safe-spend-days-badge" style="font-size:0.75rem; margin-left:auto;"></span>
+        </div>
+        <div id="stat-safe-spend-subtext" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;"></div>
       </div>
+
 
       <!-- Side-by-Side Income & Expenses Grid (360px–480px) -->
       <div class="dash-summary-grid">
@@ -72,10 +81,22 @@ export async function renderDashboardView(container) {
         </div>
       </div>
 
+      <!-- Quick Add Favorites Carousel Bar (v1.4.0) -->
+      <div class="dash-favorites-bar" style="margin-bottom:1rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
+          <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); letter-spacing:0.5px;">QUICK SHORTCUTS</span>
+          <button type="button" id="btn-manage-favorites" style="background:none; border:none; color:var(--primary); font-size:0.78rem; font-weight:700; cursor:pointer; padding:0;">+ Manage</button>
+        </div>
+        <div id="favorites-chips-container" style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.3rem; scrollbar-width:none;">
+          <div style="font-size:0.8rem; color:var(--text-muted);">Loading shortcuts...</div>
+        </div>
+      </div>
+
       <!-- Action Card: Add Transaction -->
       <div class="dash-action-card" id="btn-quick-add" role="button" tabindex="0" aria-label="Add Transaction">
+
         <div class="action-card-left">
-          <div class="action-icon-box">
+          <div class="action-icon-box" style="background:rgba(255,255,255,0.06); color:var(--text-main); box-shadow:none;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="12" y1="5" x2="12" y2="19"/>
               <line x1="5" y1="12" x2="19" y2="12"/>
@@ -165,6 +186,15 @@ export async function renderDashboardView(container) {
     });
   }
 
+  // Manage Favorites click handler
+  document.getElementById('btn-manage-favorites')?.addEventListener('click', () => {
+    openManageFavoritesModal({
+      onSuccess: async () => {
+        await loadDashboardData(currentTimeframe, currencyCode);
+      }
+    });
+  });
+
   // Timeframe selector click handlers
   let currentTimeframe = 'month';
   const timeframeBtns = container.querySelectorAll('#timeframe-selector .timeframe-btn');
@@ -182,9 +212,11 @@ export async function renderDashboardView(container) {
 
 async function loadDashboardData(timeframe, currencyCode) {
   try {
-    const [data, budgetSummary] = await Promise.all([
+    const [data, budgetSummary, safeSpendData, favorites] = await Promise.all([
       APIClient.getDashboardSummary(timeframe),
-      APIClient.getBudgetSummary().catch(() => null)
+      APIClient.getBudgetSummary().catch(() => null),
+      APIClient.getDailySafeSpend().catch(() => null),
+      APIClient.getFavorites().catch(() => [])
     ]);
 
     // Update Stat Cards
@@ -192,8 +224,16 @@ async function loadDashboardData(timeframe, currencyCode) {
     document.getElementById('stat-income').textContent = formatCurrency(data.summary.total_income, currencyCode);
     document.getElementById('stat-expense').textContent = formatCurrency(data.summary.total_expense, currencyCode);
 
+    // Render Daily Safe Spend Widget (v1.4.0)
+    renderDailySafeSpendWidget(safeSpendData, currencyCode);
+
+    // Render Quick Add Favorites (v1.4.0)
+    renderFavoritesWidget(favorites, currencyCode, timeframe);
+
     // Render Budget Overview Widget (v1.3.0)
     renderBudgetOverviewWidget(budgetSummary, currencyCode);
+
+
 
     // Render Trend Chart
     renderTrendChart(data.monthly_trends, currencyCode);
@@ -629,6 +669,82 @@ function formatDateDisplay(isoDateStr) {
   return isoDateStr;
 }
 
+function renderDailySafeSpendWidget(data, currencyCode) {
+  const amountEl = document.getElementById('stat-daily-safe-spend');
+  const badgeEl = document.getElementById('safe-spend-days-badge');
+  const subtextEl = document.getElementById('stat-safe-spend-subtext');
+
+  if (!amountEl || !badgeEl || !subtextEl) return;
+
+  if (!data || !data.has_budget) {
+    amountEl.innerHTML = `--`;
+    badgeEl.textContent = ``;
+    subtextEl.textContent = `Set a monthly budget to enable`;
+    return;
+  }
+
+  badgeEl.textContent = `${data.remaining_days} ${data.remaining_days === 1 ? 'day' : 'days'} left`;
+
+  if (data.is_budget_exceeded) {
+    amountEl.innerHTML = `<span style="color:#ef4444;">${formatCurrency(0, currencyCode)}/day</span>`;
+    subtextEl.textContent = `Budget Exceeded! Spent ${formatCurrency(data.current_month_spent, currencyCode)} of ${formatCurrency(data.month_total_budget, currencyCode)}`;
+    subtextEl.style.color = '#ef4444';
+  } else {
+    amountEl.innerHTML = `${formatCurrency(data.daily_safe_spend, currencyCode)}/day`;
+    subtextEl.textContent = `${formatCurrency(data.remaining_budget, currencyCode)} remaining for ${data.remaining_days} days`;
+    subtextEl.style.color = 'var(--text-muted)';
+  }
+}
+
+
+function renderFavoritesWidget(favs, currencyCode, timeframe) {
+  const container = document.getElementById('favorites-chips-container');
+  if (!container) return;
+
+  if (!favs || favs.length === 0) {
+    container.innerHTML = `
+      <button type="button" id="btn-empty-create-shortcut" style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.45rem 0.85rem; background:transparent; border:1px dashed var(--glass-border); border-radius:20px; color:var(--text-muted); font-size:0.82rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s ease;">
+        + Create Shortcut
+      </button>
+    `;
+    setTimeout(() => {
+      const btn = document.getElementById('btn-empty-create-shortcut');
+      if (btn) btn.addEventListener('click', () => {
+        const manageBtn = document.getElementById('btn-manage-favorites');
+        if (manageBtn) manageBtn.click();
+      });
+    }, 0);
+    return;
+  }
+
+  container.innerHTML = favs.map(f => `
+    <button type="button" class="fav-chip-btn" data-fav='${JSON.stringify(f).replace(/'/g, "&apos;").replace(/"/g, "&quot;")}' style="display:inline-flex; align-items:center; gap:0.4rem; padding:0.45rem 0.85rem; background:rgba(255,255,255,0.06); border:1px solid var(--glass-border); border-radius:20px; color:var(--text-main); font-size:0.82rem; font-weight:600; cursor:pointer; white-space:nowrap; transition:all 0.2s ease;">
+      <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:${f.category_color || '#3b82f6'};"></span>
+      <span>${escapeHTML(f.name)}</span>
+      <span style="color:${f.type === 'INCOME' ? '#10b981' : 'var(--text-muted)'}; font-size:0.75rem;">(${f.type === 'INCOME' ? '+' : ''}${formatCurrency(f.amount, currencyCode)})</span>
+    </button>
+  `).join('');
+
+  container.querySelectorAll('.fav-chip-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const f = JSON.parse(btn.dataset.fav);
+      openTransactionModal({
+        initialData: {
+          type: f.type,
+          amount: f.amount,
+          category_id: f.category_id,
+          payment_method: f.payment_method,
+          note: f.note || f.name
+        },
+        onSuccess: async () => {
+          await loadDashboardData(timeframe, currencyCode);
+        }
+      });
+    });
+  });
+}
+
 function escapeHTML(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
+

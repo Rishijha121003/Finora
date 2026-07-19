@@ -5,6 +5,7 @@ import { renderTransactionsView } from './views/transactionsView.js?v=1.3.0';
 import { renderCategoriesView } from './views/categoriesView.js?v=1.3.0';
 import { renderProfileView } from './views/profileView.js?v=1.3.0';
 import { renderLandingView } from './views/landingView.js';
+import { renderLegalView } from './views/legalView.js?v=1.4.0';
 import APIClient from './api.js';
 
 class App {
@@ -218,7 +219,7 @@ class App {
           <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-bottom:0.2rem;">Finora</h3>
           <p style="font-size:0.85rem; font-weight:600; color:var(--primary); margin-bottom:0.75rem;">Personal Finance Management Platform</p>
           <div style="display:inline-block; font-size:0.75rem; font-weight:700; color:var(--text-main); background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:1rem;">
-            Version v1.3.0
+            Version v1.4.0
           </div>
           <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:1.2rem;">
             Track your income, expenses, and financial activity in one simple place.
@@ -245,17 +246,19 @@ class App {
     }
 
     const isLandingSection = ['#landing', '#hero', '#features', '#about'].includes(hash);
-    const isPublicRoute = isLandingSection || ['#login', '#register'].includes(hash);
+    const isLegalSection = ['#privacy', '#terms'].includes(hash);
+    const isPublicRoute = isLandingSection || isLegalSection || ['#login', '#register'].includes(hash);
 
     if (!authManager.isAuthenticated() && !isPublicRoute) {
       window.location.hash = '#landing';
       return;
     }
 
-    if (authManager.isAuthenticated() && isPublicRoute) {
+    if (authManager.isAuthenticated() && isPublicRoute && !isLegalSection) {
       window.location.hash = '#dashboard';
       return;
     }
+
 
     // Render App Navigation & Modal when authenticated and on an app route
     const showAppNavbar = authManager.isAuthenticated() && !isLandingSection;
@@ -436,6 +439,11 @@ class App {
       case '#login':
         renderAuthView(mainContent, false);
         break;
+      case '#privacy':
+      case '#terms':
+        mainContent.innerHTML = renderLegalView(hash);
+        break;
+
       case '#transactions':
         await renderTransactionsView(mainContent, queryParams);
         break;

@@ -99,11 +99,19 @@ class APIClient {
     });
   }
 
+  static async updateCategory(id, categoryData) {
+    return this.request(`/categories/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(categoryData)
+    });
+  }
+
   static async deleteCategory(categoryId) {
     return this.request(`/categories/${categoryId}`, {
       method: 'DELETE'
     });
   }
+
 
   // Transactions Endpoints
   static async getTransactions(params = {}) {
@@ -144,6 +152,11 @@ class APIClient {
     return this.request(`/dashboard/summary?${params.toString()}`);
   }
 
+  static async getDailySafeSpend() {
+    return this.request('/dashboard/daily-safe-spend');
+  }
+
+
   // Feedback Endpoint
   static async submitFeedback(feedbackData) {
     return this.request('/feedback', {
@@ -173,6 +186,73 @@ class APIClient {
       method: 'DELETE'
     });
   }
+
+  // Favorites Shortcuts (v1.4.0)
+  static async getFavorites() {
+    return this.request('/favorites');
+  }
+
+  static async createFavorite(favoriteData) {
+    return this.request('/favorites', {
+      method: 'POST',
+      body: JSON.stringify(favoriteData)
+    });
+  }
+
+  static async updateFavorite(id, favoriteData) {
+    return this.request(`/favorites/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(favoriteData)
+    });
+  }
+
+  static async deleteFavorite(id) {
+    return this.request(`/favorites/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+
+  // Auth & Account Management (v1.4.0)
+  static async changePassword(data) {
+    return this.request('/auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  }
+
+  static async deleteAccount(data) {
+    return this.request('/auth/account', {
+      method: 'DELETE',
+      body: JSON.stringify(data)
+    });
+  }
+
+  // Data Export (v1.4.0)
+  static async exportTransactionsCSV(rangeType = 'all', startDate = null, endDate = null) {
+    const token = this.getAuthToken();
+    const params = new URLSearchParams({ range_type: rangeType });
+    if (startDate) params.append('start_date', startDate);
+    if (endDate) params.append('end_date', endDate);
+
+    const headers = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    const response = await fetch(`${API_BASE_URL}/transactions/export?${params.toString()}`, { headers });
+    if (!response.ok) {
+      throw new Error('Failed to export transaction history.');
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finora_transactions_${new Date().toISOString().slice(0,10).replace(/-/g, '')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
 }
 
 export default APIClient;
+

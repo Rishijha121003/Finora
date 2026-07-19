@@ -1,3 +1,4 @@
+import calendar
 from fastapi import APIRouter, Depends, Query
 from typing import Optional
 from datetime import date, timedelta
@@ -8,14 +9,68 @@ from sqlalchemy import func, extract, desc
 from app.database import get_db
 from app.models.transaction import Transaction
 from app.models.category import Category
+from app.models.budget import Budget
 from app.models.user import User
 from app.schemas.dashboard import (
-    DashboardSummaryResponse, DashboardSummaryMetrics, CategoryBreakdownItem, MonthlyTrendItem
+    DashboardSummaryResponse, DashboardSummaryMetrics, CategoryBreakdownItem, MonthlyTrendItem, DailySafeSpendResponse
 )
 from app.schemas.transaction import TransactionResponse
 from app.routers.deps import get_current_user
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
+
+@router.get("/daily-safe-spend", response_model=DailySafeSpendResponse)
+def get_daily_safe_spend(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    today = date.today()
+    days_in_month = calendar.monthrange(today.year, today.month)[1]
+    remaining_days = max(1, (days_in_month - today.day) + 1)
+
+    budget = db.query(Budget).filter(Budget.user_id == current_user.id).first()
+    if not budget or budget.amount <= 0:
+        return DailySafeSpendResponse(
+            has_budget=False,
+            daily_safe_spend=Decimal("0.00"),
+            remaining_budget=Decimal("0.00"),
+            month_total_budget=Decimal("0.00"),
+            current_month_spent=Decimal("0.00"),
+            remaining_days=remaining_days,
+            is_budget_exceeded=False
+        )
+
+    month_start = today.replace(day=1)
+    month_spent = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+        Transaction.user_id == current_user.id,
+        Transaction.type == "EXPENSE",
+        Transaction.transaction_date >= month_start,
+        Transaction.transaction_date <= today
+    ).scalar() or Decimal("0.00")
+
+    month_spent_dec = Decimal(str(month_spent))
+    monthly_limit_dec = Decimal(str(budget.amount))
+
+
+    remaining_budget = monthly_limit_dec - month_spent_dec
+    is_exceeded = remaining_budget <= 0
+
+    if is_exceeded:
+        safe_spend = Decimal("0.00")
+        remaining_budget = Decimal("0.00")
+    else:
+        safe_spend = (remaining_budget / Decimal(str(remaining_days))).quantize(Decimal("0.01"))
+
+    return DailySafeSpendResponse(
+        has_budget=True,
+        daily_safe_spend=safe_spend,
+        remaining_budget=remaining_budget.quantize(Decimal("0.01")),
+        month_total_budget=monthly_limit_dec,
+        current_month_spent=month_spent_dec.quantize(Decimal("0.01")),
+        remaining_days=remaining_days,
+        is_budget_exceeded=is_exceeded
+    )
+
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
 def get_dashboard_summary(

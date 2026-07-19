@@ -1,5 +1,8 @@
 import uuid
+import csv
+import io
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import Response
 from typing import Optional
 from datetime import date
 from sqlalchemy.orm import Session
@@ -16,6 +19,57 @@ from app.schemas.transaction import (
 from app.routers.deps import get_current_user
 
 router = APIRouter(prefix="/transactions", tags=["Transactions"])
+
+@router.get("/export")
+def export_transactions_csv(
+    range_type: str = Query("all", pattern="^(all|month|custom)$"),
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    query = db.query(Transaction, Category).join(
+        Category, Transaction.category_id == Category.id
+    ).filter(Transaction.user_id == current_user.id)
+
+    if range_type == "month":
+        today = date.today()
+        first_day = today.replace(day=1)
+        query = query.filter(Transaction.transaction_date >= first_day, Transaction.transaction_date <= today)
+    elif range_type == "custom":
+        if start_date:
+            query = query.filter(Transaction.transaction_date >= start_date)
+        if end_date:
+            query = query.filter(Transaction.transaction_date <= end_date)
+
+    results = query.order_by(desc(Transaction.transaction_date)).all()
+
+    output = io.StringIO()
+    writer = csv.writer(output, quoting=csv.QUOTE_MINIMAL)
+    writer.writerow(["Date", "Type", "Category", "Amount", "Currency", "Payment Method", "Note", "Created At"])
+
+    for tx, cat in results:
+        writer.writerow([
+            tx.transaction_date.strftime("%Y-%m-%d") if tx.transaction_date else "",
+            tx.type,
+            cat.name if cat else "Uncategorized",
+            f"{tx.amount:.2f}",
+            current_user.currency_code,
+            tx.payment_method,
+            tx.note or "",
+            tx.created_at.strftime("%Y-%m-%d %H:%M:%S") if tx.created_at else ""
+        ])
+
+    csv_data = output.getvalue()
+    output.close()
+
+    filename = f"finora_transactions_{date.today().strftime('%Y%m%d')}.csv"
+    return Response(
+        content=csv_data,
+        media_type="text/csv",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'}
+    )
+
 
 @router.get("", response_model=TransactionListResponse)
 def get_transactions(
