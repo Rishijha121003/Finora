@@ -20,7 +20,7 @@ export async function renderDashboardView(container) {
     <div class="dash-mobile-container">
       <!-- Greeting Header -->
       <div class="dash-greeting-header">
-        <h1 class="dash-greeting-title">${greeting}, ${escapeHTML(userName.toLowerCase())} 👋</h1>
+        <h1 class="dash-greeting-title">${greeting}, ${escapeHTML(userName)} 👋</h1>
         <p class="dash-greeting-subtitle">Here’s your financial overview</p>
       </div>
 

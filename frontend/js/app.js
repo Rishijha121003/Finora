@@ -1,9 +1,9 @@
 import { authManager } from './auth.js';
 import { renderAuthView } from './views/authView.js';
-import { renderDashboardView } from './views/dashboardView.js?v=1.2.0';
-import { renderTransactionsView } from './views/transactionsView.js?v=1.2.0';
-import { renderCategoriesView } from './views/categoriesView.js?v=1.2.0';
-import { renderProfileView } from './views/profileView.js?v=1.2.0';
+import { renderDashboardView } from './views/dashboardView.js?v=1.2.1';
+import { renderTransactionsView } from './views/transactionsView.js?v=1.2.1';
+import { renderCategoriesView } from './views/categoriesView.js?v=1.2.1';
+import { renderProfileView } from './views/profileView.js?v=1.2.1';
 import { renderLandingView } from './views/landingView.js';
 import APIClient from './api.js';
 
@@ -54,7 +54,7 @@ class App {
       <!-- Top Navbar (Desktop & Mobile Brand / Toggle) -->
       <nav class="navbar">
         <a href="#dashboard" class="brand">
-          <img src="assets/logo.png?v=1.2.0" class="brand-logo-img" alt="Finora Logo" />
+          <img src="assets/logo.png?v=1.2.1" class="brand-logo-img" alt="Finora Logo" />
           <span>Finora</span>
         </a>
 
@@ -215,7 +215,7 @@ class App {
           <h3 style="font-size:1.35rem; font-weight:800; color:var(--text-main); margin-bottom:0.2rem;">Finora</h3>
           <p style="font-size:0.85rem; font-weight:600; color:var(--primary); margin-bottom:0.75rem;">Personal Finance Management Platform</p>
           <div style="display:inline-block; font-size:0.75rem; font-weight:700; color:var(--text-main); background:rgba(255,255,255,0.08); border:1px solid var(--glass-border); padding:0.25rem 0.75rem; border-radius:20px; margin-bottom:1rem;">
-            Version v1.2.0
+            Version v1.2.1
           </div>
           <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:1.2rem;">
             Track your income, expenses, and financial activity in one simple place.
@@ -283,11 +283,22 @@ class App {
 
       // Currency Select Change Handler (Desktop & Mobile)
       const handleCurrencyChange = async (newCurrency) => {
+        const previousCurrency = authManager.getUserCurrency();
+        const headerSelect = document.getElementById('header-currency-select');
+        const mobileSelect = document.getElementById('mobile-currency-select');
+
+        // Keep UI dropdowns synchronized immediately
+        if (headerSelect) headerSelect.value = newCurrency;
+        if (mobileSelect) mobileSelect.value = newCurrency;
+
         try {
           await APIClient.updateProfile({ currency_code: newCurrency });
           authManager.currentUser.currency_code = newCurrency;
           this.handleRoute(); // Refresh view with new currency symbol
         } catch (err) {
+          // Revert both dropdowns to previous persisted currency on failure
+          if (headerSelect) headerSelect.value = previousCurrency;
+          if (mobileSelect) mobileSelect.value = previousCurrency;
           alert('Failed to update currency preference.');
         }
       };

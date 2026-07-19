@@ -46,12 +46,14 @@ def get_transactions(
         query = query.filter(Transaction.category_id == category_id)
     if payment_method:
         query = query.filter(Transaction.payment_method == payment_method.upper())
-    if search:
-        search_term = f"%{search.strip()}%"
+    if search and search.strip():
+        search_clean = search.strip()
+        escaped_search = search_clean.replace("/", "//").replace("%", "/%").replace("_", "/_")
+        search_pattern = f"%{escaped_search}%"
         query = query.filter(
             or_(
-                Transaction.note.ilike(search_term),
-                Category.name.ilike(search_term)
+                Transaction.note.ilike(search_pattern, escape='/'),
+                Category.name.ilike(search_pattern, escape='/')
             )
         )
 
