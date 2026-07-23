@@ -289,44 +289,161 @@ body {
   transform: scale(1.02);
 }
 
-/* Auth Mobile Fallback */
-@media (max-width: 768px) {
+/* Password Input Wrapper & Toggle Button */
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.password-input-wrapper .form-control {
+  padding-right: 3rem;
+}
+
+.password-toggle-btn {
+  position: absolute;
+  right: 0.25rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: var(--radius-sm);
+  transition: color 0.2s ease, background-color 0.2s ease;
+  z-index: 5;
+}
+
+.password-toggle-btn:hover {
+  color: var(--text-main);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.password-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+}
+
+/* Auth Mobile Full-Width Panel (<= 640px) */
+@media (max-width: 640px) {
   .auth-split-container {
-    height: auto;
-    min-height: 550px;
-    margin: 2rem auto;
-    box-shadow: none;
-    background: transparent;
-    border: none;
-    overflow: visible;
     display: block;
-  }
-  .auth-form-area {
-    position: relative;
+    max-width: 440px;
     width: 100%;
-    transform: none !important;
+    height: auto;
+    min-height: auto;
+    max-height: calc(100vh - 2rem);
+    max-height: calc(100dvh - 2rem);
+    margin: 1.5rem auto;
     background: var(--bg-card);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
+    overflow: hidden;
+    position: relative;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
   }
+
   .auth-visual-panel {
-    display: none;
+    display: none !important;
   }
+
+  .auth-form-area {
+    position: relative;
+    width: 100%;
+    height: auto;
+    transform: none !important;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+  }
+
   .auth-form-panel {
+    grid-area: 1 / 1 / 2 / 2;
+    position: relative;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: auto;
     padding: 2rem 1.5rem;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    background: var(--bg-card);
+    overflow-y: auto;
+    max-height: calc(100vh - 3rem);
+    max-height: calc(100dvh - 3rem);
+    box-sizing: border-box;
   }
+
   /* Subtle Horizontal Fade/Slide on Mobile */
   .login-panel {
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
+    opacity: 1;
+    z-index: 2;
+    pointer-events: auto;
+    visibility: visible;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.35s step-start;
   }
+
   .register-panel {
-    transform: translateX(15px) scale(0.98);
+    transform: translateX(30px);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    visibility: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.35s step-end;
   }
+
   .auth-split-container.is-register .login-panel {
-    transform: translateX(-15px) scale(0.98);
+    transform: translateX(-30px);
+    opacity: 0;
+    z-index: 1;
+    pointer-events: none;
+    visibility: hidden;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.35s step-end;
   }
+
   .auth-split-container.is-register .register-panel {
-    transform: translateX(0) scale(1);
+    transform: translateX(0);
+    opacity: 1;
+    z-index: 2;
+    pointer-events: auto;
+    visibility: visible;
+    transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.35s step-start;
+  }
+
+  /* Touch Targets: minimum 44px height */
+  .auth-form-panel .form-control,
+  .auth-form-panel .btn,
+  .auth-form-panel .password-toggle-btn {
+    min-height: 44px;
+  }
+
+  .auth-form-panel a {
+    display: inline-block;
+    min-height: 44px;
+    line-height: 44px;
+  }
+}
+
+/* Accessibility: Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  .auth-split-container,
+  .auth-form-area,
+  .auth-form-panel,
+  .login-panel,
+  .register-panel {
+    transition: opacity 0.01s linear !important;
+    transform: none !important;
   }
 }
 
