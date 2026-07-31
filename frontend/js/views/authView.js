@@ -51,7 +51,7 @@ export function renderAuthView(container, isRegister = false) {
             <h2>Welcome Back</h2>
             <p>Sign in to access your money dashboard</p>
           </div>
-          <div id="login-error" style="display:none; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); color:#ef4444; border-radius:8px; margin-bottom:1rem; font-size:0.88rem; text-align:center;"></div>
+          <div id="login-error" style="display:none; padding:0.75rem; background:rgba(244, 63, 94, 0.15); border:1px solid rgba(244, 63, 94, 0.3); color:#F43F5E; border-radius:8px; margin-bottom:1rem; font-size:0.88rem; text-align:center;"></div>
           <form id="login-form">
             <div class="form-group">
               <label for="login-email-input">Email Address</label>
@@ -86,7 +86,7 @@ export function renderAuthView(container, isRegister = false) {
             <h2>Create Account</h2>
             <p>Start tracking your money effortlessly</p>
           </div>
-          <div id="register-error" style="display:none; padding:0.75rem; background:rgba(239, 68, 68, 0.15); border:1px solid rgba(239, 68, 68, 0.3); color:#ef4444; border-radius:8px; margin-bottom:1rem; font-size:0.88rem; text-align:center;"></div>
+          <div id="register-error" style="display:none; padding:0.75rem; background:rgba(244, 63, 94, 0.15); border:1px solid rgba(244, 63, 94, 0.3); color:#F43F5E; border-radius:8px; margin-bottom:1rem; font-size:0.88rem; text-align:center;"></div>
           <form id="register-form" autocomplete="off">
             <div class="form-group">
               <label for="register-name-input">Full Name</label>

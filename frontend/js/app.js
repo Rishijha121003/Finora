@@ -7,7 +7,7 @@ import { renderProfileView } from './views/profileView.js?v=1.3.0';
 import { renderLandingView } from './views/landingView.js';
 import { renderLegalView } from './views/legalView.js?v=1.4.0';
 import APIClient from './api.js';
-
+import { renderAccountsView } from './views/accountsView.js';
 class App {
   constructor() {
     this.appContainer = document.getElementById('app');
@@ -63,12 +63,13 @@ class App {
         </a>
 
         <!-- Desktop Navigation Links (>= 768px) -->
-        <div class="nav-links">
-          <a href="#dashboard" class="nav-item ${currentHash.startsWith('#dashboard') ? 'active' : ''}">Dashboard</a>
-          <a href="#transactions" class="nav-item ${currentHash.startsWith('#transactions') ? 'active' : ''}">Transactions</a>
-          <a href="#categories" class="nav-item ${currentHash.startsWith('#categories') ? 'active' : ''}">Categories</a>
-          <a href="#profile" class="nav-item ${currentHash.startsWith('#profile') ? 'active' : ''}">Profile</a>
-        </div>
+<div class="nav-links">
+  <a href="#dashboard" class="nav-item ${currentHash.startsWith('#dashboard') ? 'active' : ''}">Dashboard</a>
+  <a href="#transactions" class="nav-item ${currentHash.startsWith('#transactions') ? 'active' : ''}">Transactions</a>
+  <a href="#accounts" class="nav-item ${currentHash.startsWith('#accounts') ? 'active' : ''}">Accounts</a>
+  <a href="#categories" class="nav-item ${currentHash.startsWith('#categories') ? 'active' : ''}">Categories</a>
+  <a href="#profile" class="nav-item ${currentHash.startsWith('#profile') ? 'active' : ''}">Profile</a>
+</div>
 
         <!-- Desktop User Actions (>= 768px) -->
         <div class="nav-actions">
@@ -211,7 +212,7 @@ class App {
           <div style="display:flex; justify-content:flex-end;">
             <button type="button" class="btn" id="btn-close-about-modal" style="padding:0.2rem 0.5rem; font-size:1.3rem; border:none; background:transparent; color:var(--text-muted); cursor:pointer;">&times;</button>
           </div>
-          <div style="width:56px; height:56px; background:linear-gradient(135deg, var(--primary), #8b5cf6); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:1.6rem; font-weight:800; margin-bottom:0.75rem; box-shadow:0 4px 16px rgba(99,102,241,0.4);">
+          <div style="width:56px; height:56px; background:linear-gradient(135deg, var(--primary), #059669); border-radius:14px; display:inline-flex; align-items:center; justify-content:center; color:#fff; font-size:1.6rem; font-weight:800; margin-bottom:0.75rem; box-shadow:0 4px 16px rgba(16,185,129,0.4);">
             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
             </svg>
@@ -375,9 +376,9 @@ class App {
 
         if (message.length < 5) {
           alertBox.style.display = 'block';
-          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
-          alertBox.style.color = '#ef4444';
-          alertBox.style.border = '1px solid #ef4444';
+          alertBox.style.background = 'rgba(244, 63, 94, 0.15)';
+          alertBox.style.color = '#F43F5E';
+          alertBox.style.border = '1px solid #F43F5E';
           alertBox.textContent = 'Feedback message must be at least 5 characters long.';
           if (window.showToast) window.showToast('Feedback message must be at least 5 characters.', 'warning');
           return;
@@ -416,9 +417,9 @@ class App {
           submitBtn.disabled = false;
           submitBtn.textContent = 'Submit Feedback';
           alertBox.style.display = 'block';
-          alertBox.style.background = 'rgba(239, 68, 68, 0.15)';
-          alertBox.style.color = '#ef4444';
-          alertBox.style.border = '1px solid #ef4444';
+          alertBox.style.background = 'rgba(244, 63, 94, 0.15)';
+          alertBox.style.color = '#F43F5E';
+          alertBox.style.border = '1px solid #F43F5E';
           alertBox.textContent = err.message || 'Failed to submit feedback. Please try again.';
           if (window.showToast) window.showToast(err.message || 'Failed to submit feedback.', 'error');
         }
@@ -456,6 +457,9 @@ class App {
       case '#dashboard':
         await renderDashboardView(mainContent);
         break;
+      case '#accounts':
+        await renderAccountsView(mainContent);
+        break;  
       default:
         if (authManager.isAuthenticated()) {
           await renderDashboardView(mainContent);

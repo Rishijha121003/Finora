@@ -113,7 +113,33 @@ export async function renderDashboardView(container) {
           </svg>
         </div>
       </div>
+      <!-- Finora Pulse Card (v1.4.0) -->
+      <div id="pulse-card-container">
+        <div class="card dash-card-compact" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
+          <div style="display:flex; justify-content:center; align-items:center; padding:1rem; color:var(--text-muted);">
+            <div class="skeleton-line" style="width:100px; height:20px;"></div>
+          </div>
+        </div>
+      </div>
 
+      <!-- Account Overview -->
+      <div class="card dash-card-compact">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            <span style="font-size:0.95rem; font-weight:700;">Account Overview</span>
+          </div>
+        </div>
+
+        <div id="account-summary-container" class="account-summary-list">
+          <div class="skeleton-card" style="padding:0.75rem;">
+            <div class="skeleton-line title"></div>
+            <div class="skeleton-line subtitle"></div>
+          </div>
+        </div>
+      </div>
       <!-- Dashboard Budget Overview Widget (v1.3.0) -->
       <div class="card dash-card-compact" id="budget-overview-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
@@ -211,14 +237,22 @@ export async function renderDashboardView(container) {
 }
 
 async function loadDashboardData(timeframe, currencyCode) {
-  try {
-    const [data, budgetSummary, safeSpendData, favorites] = await Promise.all([
-      APIClient.getDashboardSummary(timeframe),
-      APIClient.getBudgetSummary().catch(() => null),
-      APIClient.getDailySafeSpend().catch(() => null),
-      APIClient.getFavorites().catch(() => [])
-    ]);
-
+   try {
+  const [
+  data,
+  budgetSummary,
+  safeSpendData,
+  favorites,
+  accountSummary,
+  pulseData
+] = await Promise.all([
+  APIClient.getDashboardSummary(timeframe),
+  APIClient.getBudgetSummary().catch(() => null),
+  APIClient.getDailySafeSpend().catch(() => null),
+  APIClient.getFavorites().catch(() => []),
+  APIClient.getAccountSummary().catch(() => []),
+  APIClient.getPulse().catch(() => null)
+]);
     // Update Stat Cards
     document.getElementById('stat-balance').textContent = formatCurrency(data.summary.current_balance, currencyCode);
     document.getElementById('stat-income').textContent = formatCurrency(data.summary.total_income, currencyCode);
@@ -230,9 +264,80 @@ async function loadDashboardData(timeframe, currencyCode) {
     // Render Quick Add Favorites (v1.4.0)
     renderFavoritesWidget(favorites, currencyCode, timeframe);
 
-    // Render Budget Overview Widget (v1.3.0)
+    // Render Finora Pulse Card (v1.4.0)
+    renderPulseCard(pulseData, currencyCode);
+
+        // Render Budget Overview Widget (v1.3.0)
     renderBudgetOverviewWidget(budgetSummary, currencyCode);
 
+    // Render Account Summary Widget (v2.0.0)
+    const accountContainer = document.getElementById('account-summary-container');
+
+    if (accountContainer) {
+      if (!accountSummary || accountSummary.length === 0) {
+        accountContainer.innerHTML = `
+          <div class="dash-empty-breakdown">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.3rem;">
+              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+            </svg>
+            <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">No accounts found.</div>
+          </div>
+        `;
+      } else {
+        accountContainer.innerHTML = accountSummary.map(account => {
+          const accNameLower = (account.account_name || '').toLowerCase();
+          const isCash = accNameLower.includes('cash') || accNameLower.includes('wallet') || accNameLower.includes('hand') || accNameLower.includes('petty');
+          
+          const iconSvg = isCash ? `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/>
+              <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/>
+              <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/>
+            </svg>
+          ` : `
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="21" x2="21" y2="21"/>
+              <line x1="3" y1="10" x2="21" y2="10"/>
+              <polyline points="5 10 12 3 19 10"/>
+              <line x1="6" y1="18" x2="6" y2="10"/>
+              <line x1="10" y1="18" x2="10" y2="10"/>
+              <line x1="14" y1="18" x2="14" y2="10"/>
+              <line x1="18" y1="18" x2="18" y2="10"/>
+            </svg>
+          `;
+
+          const iconTypeClass = isCash ? 'cash' : 'bank';
+
+          return `
+            <div class="account-summary-item">
+              <div class="account-summary-main">
+                <div class="account-icon-box ${iconTypeClass}">
+                  ${iconSvg}
+                </div>
+                <div class="account-info">
+                  <span class="account-summary-name">${escapeHTML(account.account_name)}</span>
+                  <span class="account-type-tag">${isCash ? 'Cash Account' : 'Bank Account'}</span>
+                </div>
+                <div class="account-summary-balance">
+                  ${formatCurrency(account.current_balance, currencyCode)}
+                </div>
+              </div>
+
+              <div class="account-summary-stats">
+                <span class="stat-badge income">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                  ${formatCurrency(account.income, currencyCode)}
+                </span>
+                <span class="stat-badge expense">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg>
+                  ${formatCurrency(account.expense, currencyCode)}
+                </span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
 
 
     // Render Trend Chart
@@ -393,6 +498,103 @@ async function loadDashboardData(timeframe, currencyCode) {
   }
 }
 
+function renderPulseCard(pulseData, currencyCode) {
+  const container = document.getElementById('pulse-card-container');
+  if (!container) return;
+
+  if (!pulseData || !pulseData.overall_score) {
+    container.innerHTML = `
+      <div class="card dash-card-compact" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
+          </div>
+        </div>
+        <div style="padding:0.75rem 0.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">
+          Not enough transaction data yet. Keep tracking your finances to unlock your Pulse score.
+        </div>
+      </div>
+    `;
+    return;
+  }
+
+  // Determine color for score
+  const colorMap = {
+    'green': '#10b981',
+    'blue': '#3b82f6',
+    'orange': '#f97316',
+    'red': '#ef4444'
+  };
+  const scoreColor = colorMap[pulseData.score_color] || '#a855f7';
+  const bgColor = pulseData.score_color === 'green' ? 'rgba(16, 185, 129, 0.08)' :
+                  pulseData.score_color === 'blue' ? 'rgba(59, 130, 246, 0.08)' :
+                  pulseData.score_color === 'orange' ? 'rgba(249, 115, 22, 0.08)' :
+                  pulseData.score_color === 'red' ? 'rgba(239, 68, 68, 0.08)' :
+                  'rgba(99, 102, 241, 0.12)';
+  const borderColor = pulseData.score_color === 'green' ? 'rgba(16, 185, 129, 0.25)' :
+                      pulseData.score_color === 'blue' ? 'rgba(59, 130, 246, 0.25)' :
+                      pulseData.score_color === 'orange' ? 'rgba(249, 115, 22, 0.25)' :
+                      pulseData.score_color === 'red' ? 'rgba(239, 68, 68, 0.25)' :
+                      'rgba(99, 102, 241, 0.25)';
+
+  // Build factors breakdown HTML
+  let factorsHTML = '';
+  if (pulseData.factors && pulseData.factors.length > 0) {
+    factorsHTML = pulseData.factors.map(factor => `
+      <div style="padding:0.6rem 0; border-top:1px solid rgba(255,255,255,0.08);">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
+          <span style="font-size:0.8rem; font-weight:600; color:var(--text-main);">${factor.name}</span>
+          <span style="font-size:0.9rem; font-weight:700; color:${scoreColor};">${factor.score}</span>
+        </div>
+        <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.3;">${factor.explanation}</div>
+      </div>
+    `).join('');
+  }
+
+  container.innerHTML = `
+    <div class="card dash-card-compact" style="background: linear-gradient(135deg, ${bgColor}, rgba(139, 92, 246, 0.04)); border: 1px solid ${borderColor};">
+      <!-- Header -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+          </svg>
+          <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
+        </div>
+        <span style="font-size:0.7rem; font-weight:700; color:${scoreColor}; background:rgba(${pulseData.score_color === 'green' ? '16, 185, 129' : pulseData.score_color === 'blue' ? '59, 130, 246' : pulseData.score_color === 'orange' ? '249, 115, 22' : '239, 68, 68'}, 0.15); padding:0.15rem 0.5rem; border-radius:12px; letter-spacing:0.5px;">${pulseData.score_label}</span>
+      </div>
+
+      <!-- Score Display -->
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:0.8rem;">
+        <div>
+          <div style="font-size:1.8rem; font-weight:800; color:${scoreColor}; font-variant-numeric:tabular-nums; line-height:1;">${pulseData.overall_score}<span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;"> / 100</span></div>
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem; font-weight:500;">Financial Health Score</div>
+        </div>
+        <div style="flex:1; font-size:0.8rem; line-height:1.4; color:var(--text-muted);">
+          <strong style="color:var(--text-main);">${pulseData.primary_insight}</strong>
+        </div>
+      </div>
+
+      <!-- Summary -->
+      <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin-bottom:0.8rem; padding-bottom:0.6rem; border-bottom:1px solid rgba(255,255,255,0.08);">
+        ${pulseData.summary}
+      </div>
+
+      <!-- Factors Breakdown -->
+      <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">Scoring Factors</div>
+      ${factorsHTML}
+
+      <!-- Data Window Note -->
+      <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.8rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.08); font-style:italic;">
+        Last 3 months of data analyzed
+      </div>
+    </div>
+  `;
+}
+
 function renderBudgetOverviewWidget(summary, currencyCode) {
   const container = document.getElementById('budget-overview-container');
   const manageBtn = document.getElementById('btn-manage-budget');
@@ -425,8 +627,8 @@ function renderBudgetOverviewWidget(summary, currencyCode) {
   let barColor = 'var(--primary)';
 
   if (ob.is_exceeded) {
-    statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#ef4444; background:rgba(239, 68, 68, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">EXCEEDED</span>`;
-    barColor = '#ef4444';
+    statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#F43F5E; background:rgba(244, 63, 94, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">EXCEEDED</span>`;
+    barColor = '#F43F5E';
   } else if (ob.is_warning) {
     statusBadge = `<span style="font-size:0.7rem; font-weight:700; color:#f59e0b; background:rgba(245, 158, 11, 0.15); padding:0.15rem 0.5rem; border-radius:12px;">80%+ USED</span>`;
     barColor = '#f59e0b';
@@ -448,7 +650,7 @@ function renderBudgetOverviewWidget(summary, currencyCode) {
 
       <div style="display:flex; justify-content:space-between; align-items:center; font-size:0.75rem; color:var(--text-muted); flex-wrap:wrap; gap:0.25rem;">
         <span><strong style="color:var(--text-main);">${formatCurrency(spentAmount, currencyCode)}</strong> of ${formatCurrency(ob.amount, currencyCode)} used (${percentageUsed}%)</span>
-        <span>Remaining: <strong style="color:${ob.is_exceeded ? '#ef4444' : '#10b981'};">${formatCurrency(remainingAmount, currencyCode)}</strong></span>
+        <span>Remaining: <strong style="color:${ob.is_exceeded ? '#F43F5E' : '#10b981'};">${formatCurrency(remainingAmount, currencyCode)}</strong></span>
       </div>
     </div>
   `;
@@ -484,7 +686,7 @@ function openBudgetModal(existingBudget, currencyCode) {
         </div>
         <div style="display:flex; gap:0.5rem; justify-content:flex-end; align-items:center; margin-top:1.2rem; flex-wrap:wrap;">
           ${existingBudget ? `
-            <button type="button" id="btn-delete-budget" class="btn" style="background:transparent; color:#ef4444; border:1px solid rgba(239,68,68,0.4); padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:10px; min-height:42px; margin-right:auto;">
+            <button type="button" id="btn-delete-budget" class="btn" style="background:transparent; color:#F43F5E; border:1px solid rgba(244,63,94,0.4); padding:0.5rem 0.85rem; font-size:0.82rem; border-radius:10px; min-height:42px; margin-right:auto;">
               Delete
             </button>
           ` : ''}
@@ -612,13 +814,13 @@ function getCategoryIconConfig(categoryName, type, customColor) {
   }
   if (name.includes('housing') || name.includes('rent')) {
     return {
-      bg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      bg: 'linear-gradient(135deg, #F43F5E, #E11D48)',
       icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
     };
   }
   if (name.includes('utilit') || name.includes('bill')) {
     return {
-      bg: 'linear-gradient(135deg, #a855f7, #9333ea)',
+      bg: 'linear-gradient(135deg, #F59E0B, #D97706)',
       icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
     };
   }
@@ -647,7 +849,7 @@ function getCategoryIconConfig(categoryName, type, customColor) {
     };
   }
 
-  const color = customColor || (type === 'EXPENSE' ? '#6366f1' : '#10b981');
+  const color = customColor || (type === 'EXPENSE' ? '#F43F5E' : '#10b981');
   return {
     bg: color,
     icon: `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`
@@ -686,9 +888,9 @@ function renderDailySafeSpendWidget(data, currencyCode) {
   badgeEl.textContent = `${data.remaining_days} ${data.remaining_days === 1 ? 'day' : 'days'} left`;
 
   if (data.is_budget_exceeded) {
-    amountEl.innerHTML = `<span style="color:#ef4444;">${formatCurrency(0, currencyCode)}/day</span>`;
+    amountEl.innerHTML = `<span style="color:#F43F5E;">${formatCurrency(0, currencyCode)}/day</span>`;
     subtextEl.textContent = `Budget Exceeded! Spent ${formatCurrency(data.current_month_spent, currencyCode)} of ${formatCurrency(data.month_total_budget, currencyCode)}`;
-    subtextEl.style.color = '#ef4444';
+    subtextEl.style.color = '#F43F5E';
   } else {
     amountEl.innerHTML = `${formatCurrency(data.daily_safe_spend, currencyCode)}/day`;
     subtextEl.textContent = `${formatCurrency(data.remaining_budget, currencyCode)} remaining for ${data.remaining_days} days`;

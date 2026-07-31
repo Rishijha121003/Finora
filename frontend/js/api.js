@@ -213,6 +213,57 @@ class APIClient {
   }
 
 
+ // Accounts (v2.0.0)
+static async getAccounts() {
+  return this.request('/accounts');
+}
+
+static async getAccountSummary() {
+  return this.request('/accounts/summary');
+}
+
+static async getPulse() {
+  return this.request('/pulse');
+}
+
+static async createAccount(accountData) {
+  return this.request('/accounts', {
+    method: 'POST',
+    body: JSON.stringify(accountData)
+  });
+}
+
+  static async updateAccount(id, accountData) {
+    return this.request(`/accounts/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(accountData)
+    });
+  }
+
+  static async archiveAccount(id) {
+    return this.request(`/accounts/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
+  // Transfers (v2.0.0)
+  static async getTransfers() {
+    return this.request('/transfers');
+  }
+
+  static async createTransfer(transferData) {
+    return this.request('/transfers', {
+      method: 'POST',
+      body: JSON.stringify(transferData)
+    });
+  }
+
+  static async deleteTransfer(id) {
+    return this.request(`/transfers/${id}`, {
+      method: 'DELETE'
+    });
+  }
+
   // Auth & Account Management (v1.4.0)
   static async changePassword(data) {
     return this.request('/auth/change-password', {

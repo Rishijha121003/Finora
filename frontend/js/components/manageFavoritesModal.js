@@ -20,7 +20,7 @@ export async function openManageFavoritesModal({ onSuccess = null } = {}) {
         <button type="button" class="btn-close-modal" id="mfav-close-btn" style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
       <div style="padding:0.5rem 0;">
-        <div id="mfav-error" style="display:none; padding:0.6rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
+        <div id="mfav-error" style="display:none; padding:0.6rem; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#F43F5E; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
         
         <!-- List of current favorites -->
         <div id="mfav-list-container" style="margin-bottom:1.25rem;">
@@ -130,7 +130,7 @@ export async function openManageFavoritesModal({ onSuccess = null } = {}) {
                 <button type="button" class="btn-edit-fav" data-fav='${JSON.stringify(f).replace(/'/g, "&apos;")}' style="background:none; border:none; color:var(--primary); cursor:pointer; padding:0.2rem 0.4rem;" title="Edit Favorite">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
                 </button>
-                <button type="button" class="btn-del-fav" data-id="${f.id}" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:0.2rem 0.4rem;" title="Delete Favorite">
+                <button type="button" class="btn-del-fav" data-id="${f.id}" style="background:none; border:none; color:#F43F5E; cursor:pointer; padding:0.2rem 0.4rem;" title="Delete Favorite">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
                 </button>
               </div>
@@ -172,7 +172,7 @@ export async function openManageFavoritesModal({ onSuccess = null } = {}) {
       });
 
     } catch (err) {
-      listContainer.innerHTML = `<div style="color:#ef4444; padding:0.5rem; font-size:0.85rem;">Failed to load favorites.</div>`;
+      listContainer.innerHTML = `<div style="color:#F43F5E; padding:0.5rem; font-size:0.85rem;">Failed to load favorites.</div>`;
     }
   };
 

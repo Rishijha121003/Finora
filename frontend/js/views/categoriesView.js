@@ -81,7 +81,7 @@ export async function renderCategoriesView(container) {
           <button class="modal-close" id="cat-modal-close-btn">&times;</button>
         </div>
         <form id="cat-form">
-          <div id="cat-modal-error" style="display:none; padding:0.6rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
+          <div id="cat-modal-error" style="display:none; padding:0.6rem; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#F43F5E; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
 
           <div class="form-group">
             <label>Category Type</label>
@@ -243,7 +243,7 @@ async function loadCategoryLists() {
                       </svg>
                     </button>
                     <button class="btn-cat-more btn-delete-cat" data-id="${c.id}" data-name="${escapeHTML(c.name)}" title="Delete Custom Category" aria-label="Delete Custom Category">
-                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                         <polyline points="3 6 5 6 21 6"></polyline>
                         <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                       </svg>
@@ -301,14 +301,50 @@ async function loadCategoryLists() {
   }
 }
 
-function getCategoryIconConfig(name, type, color) {
-  const defaultBg = color ? `${color}20` : 'rgba(99, 102, 241, 0.15)';
+function getCategoryIconConfig(categoryName, type, customColor) {
+  const name = (categoryName || '').toLowerCase();
+
+  if (name.includes('dining') || name.includes('food')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ec4899" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M15 2v16"/><path d="M9 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"/><path d="M6 2v16"/></svg>`
+    };
+  }
+  if (name.includes('grocer') || name.includes('daily')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f97316" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>`
+    };
+  }
+  if (name.includes('health') || name.includes('medical')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#06b6d4" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>`
+    };
+  }
+  if (name.includes('housing') || name.includes('rent')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(244, 63, 94, 0.2), rgba(220, 38, 38, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
+    };
+  }
+  if (name.includes('utilit') || name.includes('bill')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(217, 119, 6, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
+    };
+  }
+  if (name.includes('freelance') || name.includes('consulting') || name.includes('salary')) {
+    return {
+      bg: 'linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(5, 150, 105, 0.2))',
+      icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>`
+    };
+  }
+
+  const color = customColor || (type === 'EXPENSE' ? '#F43F5E' : '#10b981');
   return {
-    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color || 'currentColor'}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-            <line x1="7" y1="7" x2="7.01" y2="7"/>
-           </svg>`,
-    bg: defaultBg
+    bg: `${color}25`,
+    icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`
   };
 }
 

@@ -191,10 +191,10 @@ export async function renderProfileView(container) {
 
       <!-- 6. DANGER ZONE -->
       <div class="profile-section" style="margin-top:2.5rem; margin-bottom: 2rem;">
-        <div class="profile-section-title" style="margin-bottom:0.5rem; font-size:0.8rem; font-weight:700; color:#ef4444; text-transform:uppercase; letter-spacing:0.5px;">Danger Zone</div>
-        <div class="profile-group-card" style="background:rgba(239,68,68,0.03); border:1px solid rgba(239,68,68,0.3); border-radius:12px; overflow:hidden; padding:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
+        <div class="profile-section-title" style="margin-bottom:0.5rem; font-size:0.8rem; font-weight:700; color:#F43F5E; text-transform:uppercase; letter-spacing:0.5px;">Danger Zone</div>
+        <div class="profile-group-card" style="background:rgba(244,63,94,0.03); border:1px solid rgba(244,63,94,0.3); border-radius:12px; overflow:hidden; padding:1.25rem; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:1rem;">
           <div style="flex:1; min-width:200px;">
-            <h4 style="font-size:0.95rem; font-weight:700; color:#ef4444; margin:0 0 0.25rem 0;">Delete Account</h4>
+            <h4 style="font-size:0.95rem; font-weight:700; color:#F43F5E; margin:0 0 0.25rem 0;">Delete Account</h4>
             <p style="font-size:0.82rem; color:var(--text-muted); margin:0; line-height:1.4;">Permanently erase your account and all data.</p>
           </div>
           <button type="button" id="btn-open-delete-account-modal" class="btn btn-danger" style="padding:0.6rem 1rem; font-size:0.85rem; border-radius:8px;">
@@ -207,14 +207,14 @@ export async function renderProfileView(container) {
       <div class="modal-overlay" id="delete-account-modal">
         <div class="modal" style="max-width:440px;">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-            <h3 style="font-size:1.2rem; font-weight:800; color:#ef4444; margin:0;">Permanently Delete Account?</h3>
+            <h3 style="font-size:1.2rem; font-weight:800; color:#F43F5E; margin:0;">Permanently Delete Account?</h3>
             <button type="button" class="btn" id="btn-close-delete-account-modal" style="padding:0.2rem 0.5rem; font-size:1.3rem; border:none; background:transparent; color:var(--text-muted); cursor:pointer;">&times;</button>
           </div>
           <p style="font-size:0.85rem; color:var(--text-muted); line-height:1.5; margin-bottom:1.2rem;">
             This action <strong>cannot be undone</strong>. All your transaction history, budgets, custom categories, and personal preferences will be permanently wiped.
           </p>
           <form id="delete-account-form">
-            <div id="delete-account-alert" style="display:none; padding:0.65rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; background:rgba(239,68,68,0.15); color:#ef4444; border:1px solid rgba(239,68,68,0.3);"></div>
+            <div id="delete-account-alert" style="display:none; padding:0.65rem; border-radius:8px; margin-bottom:1rem; font-size:0.85rem; background:rgba(244,63,94,0.15); color:#F43F5E; border:1px solid rgba(244,63,94,0.3);"></div>
             <div class="form-group" style="margin-bottom:1.2rem;">
               <label class="form-label" style="display:block; font-size:0.85rem; font-weight:600; color:var(--text-muted); margin-bottom:0.4rem;">Type your password to confirm:</label>
               <input type="password" id="delete-account-password" class="form-control" style="width:100%;" required placeholder="••••••••" />
@@ -258,9 +258,9 @@ export async function renderProfileView(container) {
     alertDiv.style.display = 'none';
 
     if (newPwd !== confirmPwd) {
-      alertDiv.style.background = 'rgba(239, 68, 68, 0.15)';
-      alertDiv.style.color = '#ef4444';
-      alertDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      alertDiv.style.background = 'rgba(244, 63, 94, 0.15)';
+      alertDiv.style.color = '#F43F5E';
+      alertDiv.style.border = '1px solid rgba(244, 63, 94, 0.3)';
       alertDiv.textContent = 'New password and confirmation do not match.';
       alertDiv.style.display = 'block';
       return;
@@ -283,9 +283,9 @@ export async function renderProfileView(container) {
       alertDiv.style.display = 'block';
       document.getElementById('change-password-form').reset();
     } catch (err) {
-      alertDiv.style.background = 'rgba(239, 68, 68, 0.15)';
-      alertDiv.style.color = '#ef4444';
-      alertDiv.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+      alertDiv.style.background = 'rgba(244, 63, 94, 0.15)';
+      alertDiv.style.color = '#F43F5E';
+      alertDiv.style.border = '1px solid rgba(244, 63, 94, 0.3)';
       alertDiv.textContent = err.message || 'Failed to update password.';
       alertDiv.style.display = 'block';
     } finally {

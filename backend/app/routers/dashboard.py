@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.dashboard import (
     DashboardSummaryResponse, DashboardSummaryMetrics, CategoryBreakdownItem, MonthlyTrendItem, DailySafeSpendResponse
 )
+from app.models.account import Account
 from app.schemas.transaction import TransactionResponse
 from app.routers.deps import get_current_user
 
@@ -127,8 +128,36 @@ def get_dashboard_summary(
 
     total_income_dec = Decimal(str(total_income))
     total_expense_dec = Decimal(str(total_expense))
-    current_balance = total_income_dec - total_expense_dec
 
+    accounts = db.query(Account).filter(
+        Account.user_id == current_user.id,
+        Account.is_archived == False,
+    ).all()
+
+    total_account_balance = Decimal("0.00")
+
+    for account in accounts:
+     account_income = db.query(
+        func.coalesce(func.sum(Transaction.amount), 0)
+    ).filter(
+        Transaction.account_id == account.id,
+        Transaction.type == "INCOME",
+    ).scalar() or 0
+
+    account_expense = db.query(
+        func.coalesce(func.sum(Transaction.amount), 0)
+    ).filter(
+        Transaction.account_id == account.id,
+        Transaction.type == "EXPENSE",
+    ).scalar() or 0
+
+    total_account_balance += (
+        Decimal(str(account.opening_balance))
+        + Decimal(str(account_income))
+        - Decimal(str(account_expense))
+    )
+
+    current_balance = total_account_balance
     metrics = DashboardSummaryMetrics(
         current_balance=current_balance,
         total_income=total_income_dec,
@@ -217,6 +246,7 @@ def get_dashboard_summary(
             id=tx.id,
             user_id=tx.user_id,
             category_id=tx.category_id,
+            account_id=tx.account_id,
             category_name=cat.name,
             category_icon=cat.icon,
             category_color=cat.color,

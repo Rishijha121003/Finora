@@ -3,6 +3,7 @@ import { formatCurrency } from '../currency.js';
 import { authManager } from '../auth.js';
 
 let currentCategories = [];
+let currentAccounts = [];
 let editingTxId = null;
 
 export async function renderTransactionsView(container, queryParams = {}) {
@@ -46,6 +47,9 @@ export async function renderTransactionsView(container, queryParams = {}) {
         <select id="filter-category" class="tx-filter-select">
           <option value="">All Categories</option>
         </select>
+        <select id="filter-account" class="tx-filter-select">
+         <option value="">All Accounts</option>
+        </select>
 
         <button type="button" class="btn-adv-filters" id="btn-open-adv-filters">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -73,7 +77,7 @@ export async function renderTransactionsView(container, queryParams = {}) {
         </button>
 
         <button type="button" class="tx-tab-btn" id="tab-tx-expense">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="7" y1="7" x2="17" y2="17"/>
             <polyline points="17 7 17 17 7 17"/>
           </svg>
@@ -148,7 +152,7 @@ export async function renderTransactionsView(container, queryParams = {}) {
           <button class="modal-close" id="modal-close-btn">&times;</button>
         </div>
         <form id="tx-form">
-          <div id="modal-error" style="display:none; padding:0.6rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
+          <div id="modal-error" style="display:none; padding:0.6rem; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#F43F5E; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
           
           <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem;">
             <div class="form-group">
@@ -163,7 +167,10 @@ export async function renderTransactionsView(container, queryParams = {}) {
               <input type="number" step="0.01" min="0.01" id="tx-amount" class="form-control" placeholder="0.00" required />
             </div>
           </div>
-
+          <div class="form-group">
+          <label>Account</label>
+          <select id="tx-account" class="form-control" required></select>
+          </div>
           <div class="form-group">
             <label>Category</label>
             <select id="tx-category" class="form-control" required></select>
@@ -202,11 +209,18 @@ export async function renderTransactionsView(container, queryParams = {}) {
 
   // Load categories into select dropdowns
   try {
-    currentCategories = await APIClient.getCategories();
-    populateCategoryDropdowns(currentCategories);
-  } catch (err) {
-    console.error('Failed to load categories:', err);
-  }
+ currentCategories = await APIClient.getCategories();
+populateCategoryDropdowns(currentCategories);
+
+currentAccounts = await APIClient.getAccounts();
+populateFilterAccountDropdowns(currentAccounts);
+
+  const accounts = await APIClient.getAccounts();
+  populateAccountDropdowns(accounts);
+
+} catch (err) {
+  console.error('Failed to load categories/accounts:', err);
+}
 
   // Set default today's date in tx form
   const dateInput = document.getElementById('tx-date');
@@ -225,7 +239,9 @@ export async function renderTransactionsView(container, queryParams = {}) {
     triggerReload();
   });
   document.getElementById('filter-category')?.addEventListener('change', triggerReload);
-
+  document.getElementById('filter-category')?.addEventListener('change', triggerReload);
+  document.getElementById('filter-account')?.addEventListener('change', triggerReload);
+  
   // Advanced Filters Modal Handlers
   const advModal = document.getElementById('adv-filter-modal');
   const btnOpenAdv = document.getElementById('btn-open-adv-filters');
@@ -394,14 +410,15 @@ export async function renderTransactionsView(container, queryParams = {}) {
     const errorDiv = document.getElementById('modal-error');
     errorDiv.style.display = 'none';
 
-    const payload = {
-      type: document.getElementById('tx-type').value,
-      amount: parseFloat(document.getElementById('tx-amount').value),
-      category_id: document.getElementById('tx-category').value,
-      transaction_date: document.getElementById('tx-date').value,
-      payment_method: document.getElementById('tx-payment').value,
-      note: document.getElementById('tx-note').value
-    };
+   const payload = {
+  type: document.getElementById('tx-type').value,
+  amount: parseFloat(document.getElementById('tx-amount').value),
+  category_id: document.getElementById('tx-category').value,
+  account_id: document.getElementById('tx-account').value,
+  transaction_date: document.getElementById('tx-date').value,
+  payment_method: document.getElementById('tx-payment').value,
+  note: document.getElementById('tx-note').value
+};
 
     try {
       if (editingTxId) {
@@ -426,7 +443,19 @@ export async function renderTransactionsView(container, queryParams = {}) {
 
   await loadTransactions(currentPage, currencyCode);
 }
+function populateAccountDropdowns(accounts) {
+  const txAccountSelect = document.getElementById('tx-account');
 
+  if (txAccountSelect) {
+    txAccountSelect.innerHTML = accounts
+      .map(account => `
+        <option value="${account.id}">
+          ${account.name}
+        </option>
+      `)
+      .join('');
+  }
+}
 function populateCategoryDropdowns(categories) {
   const filterCatSelect = document.getElementById('filter-category');
   if (filterCatSelect) {
@@ -434,6 +463,17 @@ function populateCategoryDropdowns(categories) {
       categories.map(c => `<option value="${c.id}">${escapeHTML(c.name)} (${c.type})</option>`).join('');
   }
   updateCategorySelectForType('EXPENSE');
+}
+function populateFilterAccountDropdowns(accounts) {
+  const filterAccountSelect = document.getElementById('filter-account');
+
+  if (filterAccountSelect) {
+    filterAccountSelect.innerHTML =
+      `<option value="">All Accounts</option>` +
+      accounts.map(account =>
+        `<option value="${account.id}">${escapeHTML(account.name)}</option>`
+      ).join('');
+  }
 }
 
 function updateCategorySelectForType(type) {
@@ -457,6 +497,7 @@ async function loadTransactions(page, currencyCode) {
     search: document.getElementById('search-input')?.value || '',
     type: document.getElementById('filter-type')?.value || '',
     category_id: document.getElementById('filter-category')?.value || '',
+    account_id: document.getElementById('filter-account')?.value || '',
     payment_method: document.getElementById('filter-payment')?.value || '',
     start_date: startDateInput ? startDateInput.value : '',
     end_date: endDateInput ? endDateInput.value : ''
@@ -471,7 +512,16 @@ async function loadTransactions(page, currencyCode) {
     if (tabAllCount) tabAllCount.textContent = `(${totalCount})`;
 
     if (!data.transactions || data.transactions.length === 0) {
-      tableContainer.innerHTML = `<div class="empty-state" style="padding:2rem;"><div class="empty-state-icon">🔍</div>No transactions found matching your filters.</div>`;
+      tableContainer.innerHTML = `
+        <div class="empty-state" style="padding:3rem 1.5rem; text-align:center;">
+          <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.75rem;">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">No transactions found</h3>
+          <p style="font-size:0.85rem; color:var(--text-muted); max-width:340px; margin:0 auto;">Try adjusting your filters or search query, or record a new transaction.</p>
+        </div>
+      `;
       paginationContainer.innerHTML = '';
       return;
     }
@@ -483,12 +533,12 @@ async function loadTransactions(page, currencyCode) {
         <table class="table">
           <thead>
             <tr>
-              <th>Date</th>
-              <th>Category</th>
-              <th>Method</th>
-              <th>Note</th>
-              <th>Type</th>
-              <th style="text-align:right;">Amount</th>
+              <th>Account</th>
+<th>Category</th>
+<th>Method</th>
+<th>Note</th>
+<th>Type</th>
+<th style="text-align:right;">Amount</th>
               <th style="text-align:center;">Actions</th>
             </tr>
           </thead>
@@ -497,9 +547,13 @@ async function loadTransactions(page, currencyCode) {
               <tr>
                 <td><strong>${formatDateDisplay(tx.transaction_date)}</strong></td>
                 <td>
+                 ${escapeHTML(tx.account_name || '-')}
+                </td>
+                <td>
                   <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${tx.category_color || '#64748b'}; margin-right:6px;"></span>
                   ${escapeHTML(tx.category_name || 'Uncategorized')}
                 </td>
+
                 <td><span class="badge badge-${tx.payment_method.toLowerCase()}">${tx.payment_method}</span></td>
                 <td style="color:var(--text-muted); font-size:0.88rem;">${escapeHTML(tx.note || '-')}</td>
                 <td><span class="badge badge-${tx.type.toLowerCase()}">${tx.type}</span></td>
@@ -532,7 +586,9 @@ async function loadTransactions(page, currencyCode) {
                 </div>
                 <div class="tx-details">
                   <span class="tx-cat-name">${escapeHTML(tx.category_name || 'Uncategorized')}</span>
-                  <span class="tx-sub-info">${formattedDate} • ${paymentLabel}</span>
+                  <span class="tx-sub-info">
+  ${escapeHTML(tx.account_name || '-')} • ${formattedDate} • ${paymentLabel}
+</span>
                   <span class="tx-type-pill ${isIncome ? 'income' : 'expense'}">${isIncome ? 'Income' : 'Expense'}</span>
                 </div>
               </div>
@@ -687,13 +743,13 @@ function getCategoryIconConfig(categoryName, type, customColor) {
   }
   if (name.includes('housing') || name.includes('rent')) {
     return {
-      bg: 'linear-gradient(135deg, #ef4444, #dc2626)',
+      bg: 'linear-gradient(135deg, #F43F5E, #E11D48)',
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`
     };
   }
   if (name.includes('utilit') || name.includes('bill')) {
     return {
-      bg: 'linear-gradient(135deg, #a855f7, #9333ea)',
+      bg: 'linear-gradient(135deg, #F59E0B, #D97706)',
       icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>`
     };
   }
@@ -722,7 +778,7 @@ function getCategoryIconConfig(categoryName, type, customColor) {
     };
   }
 
-  const color = customColor || (type === 'EXPENSE' ? '#6366f1' : '#10b981');
+  const color = customColor || (type === 'EXPENSE' ? '#F43F5E' : '#10b981');
   return {
     bg: color,
     icon: `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>`

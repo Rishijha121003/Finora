@@ -5,13 +5,18 @@ export async function openTransactionModal({ transaction = null, initialData = n
   const currencyCode = authManager.getUserCurrency();
   let modalEl = document.getElementById('global-tx-modal');
   if (modalEl) modalEl.remove();
+  
+let categories = [];
+let accounts = [];
 
-  let categories = [];
-  try {
-    categories = await APIClient.getCategories();
-  } catch (err) {
-    console.error('Failed to fetch categories for transaction modal:', err);
-  }
+try {
+  [categories, accounts] = await Promise.all([
+    APIClient.getCategories(),
+    APIClient.getAccounts()
+  ]);
+} catch (err) {
+  console.error('Failed to fetch transaction modal data:', err);
+}
 
   const isMobile = window.innerWidth <= 640;
   const isEdit = !!transaction;
@@ -29,7 +34,7 @@ export async function openTransactionModal({ transaction = null, initialData = n
         <button type="button" class="btn-close-modal" id="gtx-close-btn" style="background:none; border:none; color:var(--text-muted); font-size:1.5rem; cursor:pointer;">&times;</button>
       </div>
       <form id="gtx-form" style="padding:0.5rem 0 0 0;">
-        <div id="gtx-error" style="display:none; padding:0.6rem; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.3); color:#ef4444; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
+        <div id="gtx-error" style="display:none; padding:0.6rem; background:rgba(244,63,94,0.15); border:1px solid rgba(244,63,94,0.3); color:#F43F5E; border-radius:6px; margin-bottom:1rem; font-size:0.85rem;"></div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
           <div class="form-group">
@@ -45,10 +50,24 @@ export async function openTransactionModal({ transaction = null, initialData = n
           </div>
         </div>
 
-        <div class="form-group" style="margin-bottom:1rem;">
-          <label class="form-label" style="font-size:0.82rem; font-weight:600;">Category</label>
-          <select id="gtx-category" class="form-control" required></select>
-        </div>
+       <div class="form-group" style="margin-bottom:1rem;">
+  <label class="form-label" style="font-size:0.82rem; font-weight:600;">
+    Account
+  </label>
+
+  <select id="gtx-account" class="form-control" required>
+    ${accounts.map(account => `
+      <option value="${account.id}">
+        ${account.name}
+      </option>
+    `).join('')}
+  </select>
+</div>
+
+<div class="form-group" style="margin-bottom:1rem;">
+  <label class="form-label" style="font-size:0.82rem; font-weight:600;">Category</label>
+  <select id="gtx-category" class="form-control" required></select>
+</div>
 
         <div style="display:grid; grid-template-columns: 1fr 1fr; gap:1rem; margin-bottom:1rem;">
           <div class="form-group">
@@ -116,18 +135,20 @@ export async function openTransactionModal({ transaction = null, initialData = n
 
   const form = document.getElementById('gtx-form');
   form.onsubmit = async (e) => {
+    console.log("SUBMIT HANDLER RUNNING");
     e.preventDefault();
     const errorDiv = document.getElementById('gtx-error');
     errorDiv.style.display = 'none';
-
-    const payload = {
-      type: document.getElementById('gtx-type').value,
-      amount: parseFloat(document.getElementById('gtx-amount').value),
-      category_id: document.getElementById('gtx-category').value,
-      transaction_date: document.getElementById('gtx-date').value,
-      payment_method: document.getElementById('gtx-payment').value,
-      note: document.getElementById('gtx-note').value
-    };
+    console.log("ACCOUNT SELECTED:", document.getElementById('gtx-account').value);
+   const payload = {
+  type: document.getElementById('gtx-type').value,
+  amount: parseFloat(document.getElementById('gtx-amount').value),
+  category_id: document.getElementById('gtx-category').value,
+  account_id: document.getElementById('gtx-account').value,
+  transaction_date: document.getElementById('gtx-date').value,
+  payment_method: document.getElementById('gtx-payment').value,
+  note: document.getElementById('gtx-note').value
+};
 
     try {
       if (editingTxId) {
