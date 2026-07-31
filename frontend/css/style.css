@@ -3193,6 +3193,80 @@ html.auth-success-transition::view-transition-new(root) {
   from { opacity: 0; transform: translateY(15px); }
   to { opacity: 1; transform: translateY(0); }
 }
+
+/* Finora Pulse Card Animations */
+@keyframes pulse-float {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  25% { transform: translate(20px, -20px) scale(1.05); }
+  50% { transform: translate(-10px, 20px) scale(0.95); }
+  75% { transform: translate(-20px, -10px) scale(1.02); }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes factor-slide-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Pulse Card Styles */
+.pulse-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.pulse-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(45deg, transparent 0%, rgba(255, 255, 255, 0.03) 50%, transparent 100%);
+  pointer-events: none;
+}
+
+/* Pulse Factor Cards */
+.pulse-factor-card {
+  padding: 0.8rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: var(--transition);
+  animation: factor-slide-in 0.5s ease-out both;
+}
+
+.pulse-factor-card:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Mobile responsive for Pulse card */
+@media (max-width: 768px) {
+  .pulse-card {
+    padding: 1rem;
+  }
+
+  .pulse-factor-card {
+    padding: 0.7rem;
+    font-size: 0.75rem;
+  }
+
+  /* Stack score circle and insight on mobile */
+  @supports (display: grid) {
+    .pulse-card {
+      --pulse-grid-cols: 1;
+    }
+  }
+}
+
+@media (max-width: 640px) {
+  .pulse-factor-card {
+    padding: 0.6rem;
+  }
+}
 /* Account Overview Widget Styles */
 .account-summary-list {
   display: flex;

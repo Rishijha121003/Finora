@@ -504,7 +504,7 @@ function renderPulseCard(pulseData, currencyCode) {
 
   if (!pulseData || !pulseData.overall_score) {
     container.innerHTML = `
-      <div class="card dash-card-compact" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
+      <div class="card dash-card-compact pulse-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
           <div style="display:flex; align-items:center; gap:0.5rem;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
@@ -521,75 +521,96 @@ function renderPulseCard(pulseData, currencyCode) {
     return;
   }
 
-  // Determine color for score
+  // Color mapping for score
   const colorMap = {
-    'green': '#10b981',
-    'blue': '#3b82f6',
-    'orange': '#f97316',
-    'red': '#ef4444'
+    'green': { hex: '#10b981', rgb: '16, 185, 129' },
+    'blue': { hex: '#3b82f6', rgb: '59, 130, 246' },
+    'orange': { hex: '#f97316', rgb: '249, 115, 22' },
+    'red': { hex: '#ef4444', rgb: '239, 68, 68' }
   };
-  const scoreColor = colorMap[pulseData.score_color] || '#a855f7';
-  const bgColor = pulseData.score_color === 'green' ? 'rgba(16, 185, 129, 0.08)' :
-                  pulseData.score_color === 'blue' ? 'rgba(59, 130, 246, 0.08)' :
-                  pulseData.score_color === 'orange' ? 'rgba(249, 115, 22, 0.08)' :
-                  pulseData.score_color === 'red' ? 'rgba(239, 68, 68, 0.08)' :
-                  'rgba(99, 102, 241, 0.12)';
-  const borderColor = pulseData.score_color === 'green' ? 'rgba(16, 185, 129, 0.25)' :
-                      pulseData.score_color === 'blue' ? 'rgba(59, 130, 246, 0.25)' :
-                      pulseData.score_color === 'orange' ? 'rgba(249, 115, 22, 0.25)' :
-                      pulseData.score_color === 'red' ? 'rgba(239, 68, 68, 0.25)' :
-                      'rgba(99, 102, 241, 0.25)';
+  const color = colorMap[pulseData.score_color] || { hex: '#a855f7', rgb: '168, 85, 247' };
+  const scorePercentage = (pulseData.overall_score / 100) * 100;
+  
+  // Create circular progress indicator
+  const circumference = 2 * Math.PI * 45; // radius = 45
+  const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
 
-  // Build factors breakdown HTML
+  // Build premium factor cards
   let factorsHTML = '';
   if (pulseData.factors && pulseData.factors.length > 0) {
-    factorsHTML = pulseData.factors.map(factor => `
-      <div style="padding:0.6rem 0; border-top:1px solid rgba(255,255,255,0.08);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.3rem;">
-          <span style="font-size:0.8rem; font-weight:600; color:var(--text-main);">${factor.name}</span>
-          <span style="font-size:0.9rem; font-weight:700; color:${scoreColor};">${factor.score}</span>
+    factorsHTML = pulseData.factors.map((factor, idx) => {
+      const factorPercentage = (factor.score / 100) * 100;
+      return `
+        <div class="pulse-factor-card" style="animation-delay:${idx * 0.1}s;">
+          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+            <div>
+              <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:0.15rem;">${factor.name}</div>
+              <div style="font-size:0.7rem; color:var(--text-muted); font-weight:500;">Weight: ${(factor.weight * 100).toFixed(0)}%</div>
+            </div>
+            <div style="font-size:1.1rem; font-weight:800; color:${color.hex};">${factor.score}</div>
+          </div>
+          <div style="width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-bottom:0.5rem;">
+            <div style="width:${factorPercentage}%; height:100%; background:linear-gradient(90deg, ${color.hex}, ${color.hex}cc); border-radius:3px; transition:width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
+          </div>
+          <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">${factor.explanation}</div>
         </div>
-        <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.3;">${factor.explanation}</div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
   container.innerHTML = `
-    <div class="card dash-card-compact" style="background: linear-gradient(135deg, ${bgColor}, rgba(139, 92, 246, 0.04)); border: 1px solid ${borderColor};">
-      <!-- Header -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-        <div style="display:flex; align-items:center; gap:0.5rem;">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-          </svg>
-          <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
+    <div class="card dash-card-compact pulse-card" style="background: linear-gradient(135deg, rgba(${color.rgb}, 0.08), rgba(139, 92, 246, 0.04)); border: 1px solid rgba(${color.rgb}, 0.25); overflow:hidden;">
+      <!-- Animated background accent -->
+      <div style="position:absolute; top:-50%; right:-50%; width:300px; height:300px; background:radial-gradient(circle, rgba(${color.rgb}, 0.1), transparent); border-radius:50%; animation:pulse-float 8s ease-in-out infinite; pointer-events:none;"></div>
+      
+      <!-- Content wrapper -->
+      <div style="position:relative; z-index:1;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+            <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
+          </div>
+          <span style="font-size:0.7rem; font-weight:700; color:${color.hex}; background:rgba(${color.rgb}, 0.15); padding:0.2rem 0.6rem; border-radius:20px; letter-spacing:0.5px; text-transform:uppercase;">${pulseData.score_label}</span>
         </div>
-        <span style="font-size:0.7rem; font-weight:700; color:${scoreColor}; background:rgba(${pulseData.score_color === 'green' ? '16, 185, 129' : pulseData.score_color === 'blue' ? '59, 130, 246' : pulseData.score_color === 'orange' ? '249, 115, 22' : '239, 68, 68'}, 0.15); padding:0.15rem 0.5rem; border-radius:12px; letter-spacing:0.5px;">${pulseData.score_label}</span>
-      </div>
 
-      <!-- Score Display -->
-      <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; margin-bottom:0.8rem;">
-        <div>
-          <div style="font-size:1.8rem; font-weight:800; color:${scoreColor}; font-variant-numeric:tabular-nums; line-height:1;">${pulseData.overall_score}<span style="font-size:0.75rem; color:var(--text-muted); font-weight:500;"> / 100</span></div>
-          <div style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem; font-weight:500;">Financial Health Score</div>
+        <!-- Score Circle Display -->
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:1.5rem; margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid rgba(255,255,255,0.08);">
+          <!-- Circular Progress -->
+          <div style="position:relative; width:120px; height:120px; flex-shrink:0;">
+            <svg width="120" height="120" style="transform:rotate(-90deg);">
+              <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
+              <circle cx="60" cy="60" r="45" fill="none" stroke="${color.hex}" stroke-width="3" stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" style="transition:stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); filter:drop-shadow(0 0 8px ${color.hex}33);"/>
+            </svg>
+            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;">
+              <div style="font-size:2rem; font-weight:800; color:${color.hex}; font-variant-numeric:tabular-nums; line-height:1;">${pulseData.overall_score}</div>
+              <div style="font-size:0.65rem; color:var(--text-muted); font-weight:500; letter-spacing:0.3px;">SCORE</div>
+            </div>
+          </div>
+
+          <!-- Insight Text -->
+          <div style="flex:1; display:flex; flex-direction:column; gap:0.6rem;">
+            <div style="font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
+              <strong style="color:var(--text-main); display:block; margin-bottom:0.3rem; font-size:0.85rem;">${pulseData.primary_insight}</strong>
+              ${pulseData.summary}
+            </div>
+          </div>
         </div>
-        <div style="flex:1; font-size:0.8rem; line-height:1.4; color:var(--text-muted);">
-          <strong style="color:var(--text-main);">${pulseData.primary_insight}</strong>
+
+        <!-- Factors Grid -->
+        <div style="margin-top:0.8rem;">
+          <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.8rem;">Scoring Factors</div>
+          <div style="display:grid; gap:0.7rem;">
+            ${factorsHTML}
+          </div>
         </div>
-      </div>
 
-      <!-- Summary -->
-      <div style="font-size:0.8rem; color:var(--text-muted); line-height:1.4; margin-bottom:0.8rem; padding-bottom:0.6rem; border-bottom:1px solid rgba(255,255,255,0.08);">
-        ${pulseData.summary}
-      </div>
-
-      <!-- Factors Breakdown -->
-      <div style="font-size:0.75rem; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.5rem;">Scoring Factors</div>
-      ${factorsHTML}
-
-      <!-- Data Window Note -->
-      <div style="font-size:0.7rem; color:var(--text-muted); margin-top:0.8rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.08); font-style:italic;">
-        Last 3 months of data analyzed
+        <!-- Footer Note -->
+        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:1rem; padding-top:0.8rem; border-top:1px solid rgba(255,255,255,0.08); font-style:italic; text-align:center; opacity:0.8;">
+          📊 Last 3 months • Updated monthly
+        </div>
       </div>
     </div>
   `;
