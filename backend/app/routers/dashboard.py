@@ -17,6 +17,7 @@ from app.schemas.dashboard import (
 from app.models.account import Account
 from app.schemas.transaction import TransactionResponse
 from app.routers.deps import get_current_user
+from app.utils.balance import calculate_total_balance
 
 router = APIRouter(prefix="/dashboard", tags=["Dashboard"])
 
@@ -134,30 +135,7 @@ def get_dashboard_summary(
         Account.is_archived == False,
     ).all()
 
-    total_account_balance = Decimal("0.00")
-
-    for account in accounts:
-     account_income = db.query(
-        func.coalesce(func.sum(Transaction.amount), 0)
-    ).filter(
-        Transaction.account_id == account.id,
-        Transaction.type == "INCOME",
-    ).scalar() or 0
-
-    account_expense = db.query(
-        func.coalesce(func.sum(Transaction.amount), 0)
-    ).filter(
-        Transaction.account_id == account.id,
-        Transaction.type == "EXPENSE",
-    ).scalar() or 0
-
-    total_account_balance += (
-        Decimal(str(account.opening_balance))
-        + Decimal(str(account_income))
-        - Decimal(str(account_expense))
-    )
-
-    current_balance = total_account_balance
+    current_balance = calculate_total_balance(accounts, db)
     metrics = DashboardSummaryMetrics(
         current_balance=current_balance,
         total_income=total_income_dec,

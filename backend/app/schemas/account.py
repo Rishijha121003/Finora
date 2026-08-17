@@ -42,7 +42,9 @@ class AccountResponse(BaseModel):
 
         from_attributes = True
 class AccountSummaryResponse(BaseModel):
+    account_id: str
     account_name: str
+    account_type: str
     income: Decimal
     expense: Decimal
     current_balance: Decimal        

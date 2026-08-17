@@ -9,7 +9,7 @@ export async function renderDashboardView(container) {
   const user = authManager.currentUser;
   const userName = user ? user.name.split(' ')[0] : 'User';
   const currencyCode = authManager.getUserCurrency();
-  
+
   // Calculate dynamic greeting based on hour of day
   const hour = new Date().getHours();
   let greeting = 'Good morning';
@@ -19,206 +19,356 @@ export async function renderDashboardView(container) {
     greeting = 'Good evening';
   }
 
+  // Get current date range display (e.g., "May 1 - May 31, 2025")
+  const now = new Date();
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const currentMonthName = monthNames[now.getMonth()];
+  const currentYear = now.getFullYear();
+  const lastDay = new Date(currentYear, now.getMonth() + 1, 0).getDate();
+  const dateRangeStr = `${currentMonthName} 1 - ${currentMonthName} ${lastDay}, ${currentYear}`;
+  const userInitial = user && user.name ? user.name.charAt(0).toUpperCase() : 'U';
+
   container.innerHTML = `
-    <div class="dash-mobile-container">
-      <!-- Greeting Header -->
-      <div class="dash-greeting-header">
-        <h1 class="dash-greeting-title">${greeting}, ${escapeHTML(userName)} 👋</h1>
-        <p class="dash-greeting-subtitle">Here’s your financial overview</p>
-      </div>
-
-      <!-- Segmented Timeframe Control Bar -->
-      <div class="dash-timeframe-bar">
-        <div class="timeframe-group" id="timeframe-selector">
-          <button class="timeframe-btn" data-timeframe="today">Today</button>
-          <button class="timeframe-btn" data-timeframe="week">This Week</button>
-          <button class="timeframe-btn active" data-timeframe="month">This Month</button>
-          <button class="timeframe-btn" data-timeframe="year">This Year</button>
-          <button class="timeframe-btn" data-timeframe="all">All</button>
+    <div class="dash-v2-container">
+      <!-- 1. Top Header Banner -->
+      <div class="dash-v2-header">
+        <div class="dash-v2-header-left">
+          <h1 class="dash-v2-title">${greeting}, ${escapeHTML(userName)} 👋</h1>
+          <p class="dash-v2-subtitle">Here’s your financial overview for ${currentMonthName} ${currentYear}</p>
         </div>
-      </div>
 
-      <!-- Full-Width Available Balance Card -->
-      <div class="dash-balance-card">
-        <div class="dash-balance-header">
-          <span class="dash-card-label">AVAILABLE BALANCE</span>
-          <div class="dash-wallet-icon" title="Available Balance">
+        <div class="dash-v2-header-right">
+          <!-- Month/Timeframe Selector Pill -->
+          <div class="dash-v2-timeframe-dropdown" id="timeframe-selector">
+            <button class="dash-v2-timeframe-btn active" data-timeframe="month">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              <span>${dateRangeStr}</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+          </div>
+
+          <!-- Notification Icon Button -->
+          <button class="dash-v2-icon-btn" title="Notifications" aria-label="Notifications">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/>
-              <path d="M4 6v12c0 1.1.9 2 2 2h14v-4"/>
-              <path d="M18 12a2 2 0 0 0-2 2c0 1.1.9 2 2 2h4v-4h-4z"/>
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
             </svg>
-          </div>
-        </div>
-        <div class="dash-balance-amount" id="stat-balance">${formatCurrency(0, currencyCode)}</div>
-        <div id="daily-safe-spend-insight" style="font-size:0.85rem; color:var(--text-muted); display:flex; align-items:center; gap:0.4rem; border-top:1px solid var(--glass-border); padding-top:0.6rem; margin-top:0.6rem;">
-          <span style="display:flex; align-items:center; gap:0.25rem;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> Safe to spend:</span>
-          <span id="stat-daily-safe-spend" style="color:var(--text-main); font-weight:600;">--/day</span>
-          <span id="safe-spend-days-badge" style="font-size:0.75rem; margin-left:auto;"></span>
-        </div>
-        <div id="stat-safe-spend-subtext" style="font-size:0.75rem; color:var(--text-muted); margin-top:0.3rem;"></div>
-      </div>
-
-
-      <!-- Side-by-Side Income & Expenses Grid (360px–480px) -->
-      <div class="dash-summary-grid">
-        <!-- INCOME Card -->
-        <div class="dash-summary-card income">
-          <div class="dash-summary-header">
-            <span class="dash-card-label">INCOME</span>
-            <span class="dash-arrow income">↗</span>
-          </div>
-          <div class="dash-summary-amount income" id="stat-income">${formatCurrency(0, currencyCode)}</div>
-        </div>
-
-        <!-- EXPENSES Card -->
-        <div class="dash-summary-card expense">
-          <div class="dash-summary-header">
-            <span class="dash-card-label">EXPENSES</span>
-            <span class="dash-arrow expense">↘</span>
-          </div>
-          <div class="dash-summary-amount expense" id="stat-expense">${formatCurrency(0, currencyCode)}</div>
-        </div>
-      </div>
-
-      <!-- Quick Add Favorites Carousel Bar (v1.4.0) -->
-      <div class="dash-favorites-bar" style="margin-bottom:1rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
-          <span style="font-size:0.75rem; font-weight:700; color:var(--text-muted); letter-spacing:0.5px;">QUICK SHORTCUTS</span>
-          <button type="button" id="btn-manage-favorites" style="background:none; border:none; color:var(--primary); font-size:0.78rem; font-weight:700; cursor:pointer; padding:0;">+ Manage</button>
-        </div>
-        <div id="favorites-chips-container" style="display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.3rem; scrollbar-width:none;">
-          <div style="font-size:0.8rem; color:var(--text-muted);">Loading shortcuts...</div>
-        </div>
-      </div>
-
-      <!-- Action Card: Add Transaction -->
-      <div class="dash-action-card" id="btn-quick-add" role="button" tabindex="0" aria-label="Add Transaction">
-
-        <div class="action-card-left">
-          <div class="action-icon-box" style="background:rgba(255,255,255,0.06); color:var(--text-main); box-shadow:none;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"/>
-              <line x1="5" y1="12" x2="19" y2="12"/>
-            </svg>
-          </div>
-          <div class="action-card-text">
-            <div class="action-card-title">Add Transaction</div>
-            <div class="action-card-subtitle">Record your income or expense</div>
-          </div>
-        </div>
-        <div class="action-card-arrow">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"/>
-          </svg>
-        </div>
-      </div>
-      <!-- Finora Pulse Card (v1.4.0) -->
-      <div id="pulse-card-container">
-        <div class="card dash-card-compact" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
-          <div style="display:flex; justify-content:center; align-items:center; padding:1rem; color:var(--text-muted);">
-            <div class="skeleton-line" style="width:100px; height:20px;"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Account Overview -->
-      <div class="card dash-card-compact">
-        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-            </svg>
-            <span style="font-size:0.95rem; font-weight:700;">Account Overview</span>
-          </div>
-        </div>
-
-        <div id="account-summary-container" class="account-summary-list">
-          <div class="skeleton-card" style="padding:0.75rem;">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line subtitle"></div>
-          </div>
-        </div>
-      </div>
-      <!-- Dashboard Budget Overview Widget (v1.3.0) -->
-      <div class="card dash-card-compact" id="budget-overview-card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
-            </svg>
-            <span style="font-size:0.95rem; font-weight:700;">Monthly Budget</span>
-          </div>
-          <button id="btn-manage-budget" class="btn btn-secondary btn-sm" style="padding:0.25rem 0.65rem; font-size:0.75rem; border-radius:12px;">
-            Set Budget
+            <span class="notification-dot"></span>
           </button>
-        </div>
-        <div id="budget-overview-container">
-          <div class="skeleton-card" style="padding:0.75rem;">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line subtitle"></div>
+
+          <!-- User Profile & Premium Badge Pill -->
+          <div class="dash-v2-user-badge">
+            <div class="user-avatar-circle">${userInitial}</div>
+            <div class="user-profile-meta">
+              <span class="user-name-text">${escapeHTML(userName)}</span>
+              <span class="premium-badge">Premium</span>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Spending Overview Chart Card -->
-      <div class="card dash-card-compact">
-        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.65rem;">
-          <span style="font-size:0.95rem; font-weight:700;">Spending Overview</span>
-          <span style="font-size:0.75rem; font-weight:500; color:var(--text-muted);">Last 6 Months</span>
+      <!-- 2. Top Tier: Pulse Health Score Gauge & Smart Insights Grid (2 Columns Desktop) -->
+      <div class="dash-v2-insights-grid">
+        <!-- Finora Pulse Score Card -->
+        <div id="pulse-card-container">
+          <div class="card pulse-v2-card">
+            <div class="pulse-v2-header">
+              <div class="pulse-v2-brand">
+                <div class="pulse-icon-box">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+                  </svg>
+                </div>
+                <span class="pulse-v2-title">Finora Pulse</span>
+                <span class="pulse-v2-beta">BETA</span>
+              </div>
+              <span class="pulse-v2-sub">Financial Health Score</span>
+            </div>
+
+            <div class="pulse-v2-body">
+              <!-- Score Ring Gauge Graphic -->
+              <div class="pulse-v2-gauge-wrapper">
+                <svg width="130" height="130" viewBox="0 0 120 120" class="pulse-gauge-svg">
+                  <circle cx="60" cy="60" r="50" class="gauge-bg-ring" />
+                  <circle cx="60" cy="60" r="50" class="gauge-score-ring" id="pulse-gauge-circle" style="stroke-dasharray: 314; stroke-dashoffset: 60; stroke: #10B981;" />
+                </svg>
+                <div class="pulse-v2-gauge-center">
+                  <div class="pulse-gauge-score" id="pulse-score-val">82</div>
+                  <div class="pulse-gauge-max">/ 100</div>
+                </div>
+              </div>
+
+              <!-- Score Status Details -->
+              <div class="pulse-v2-details">
+                <div class="pulse-v2-greeting">Great job! 🎉</div>
+                <div class="pulse-v2-health-text">Your financial health is</div>
+                <div class="pulse-v2-status-grade" id="pulse-grade-val">Good</div>
+
+                <div class="pulse-v2-delta-row">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+                  <span style="font-size:0.8rem; color:var(--text-muted);">Better than last month</span>
+                  <span class="pulse-delta-badge">↑ 12%</span>
+                </div>
+
+                <a href="#pulse" class="btn btn-secondary pulse-v2-cta">
+                  <span>View Full Insights</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
-        <div id="trend-chart-container" style="min-height:130px; display:flex; flex-direction:column; justify-content:flex-end;">
-          <div class="skeleton-card" style="padding:0.75rem;">
-            <div class="skeleton-line title"></div>
-            <div class="skeleton-line subtitle"></div>
+
+        <!-- Smart Insight Card -->
+        <div class="card smart-insight-v2-card">
+          <div class="smart-insight-header">
+            <div class="smart-insight-title">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>
+              </svg>
+              <span>Smart Insight</span>
+            </div>
+            <button class="dash-v2-more-btn" title="More options" aria-label="More options">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+            </button>
+          </div>
+
+          <div class="smart-insight-body">
+            <p class="smart-insight-text" id="smart-insight-text">
+              Loading smart insight...
+            </p>
+          </div>
+
+          <div class="smart-insight-footer">
+            <a href="#pulse" class="btn btn-secondary smart-insight-cta">
+              <span>See All Insights</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+            </a>
+            <div class="smart-insight-graphic">
+              <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="opacity:0.35;">
+                <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                <polyline points="17 6 23 6 23 12"/>
+              </svg>
+            </div>
           </div>
         </div>
       </div>
 
-      <!-- Expense Breakdown Card -->
-      <div class="card dash-card-compact">
-        <div class="card-title" style="font-size:0.95rem; font-weight:700; margin-bottom:0.65rem;">Expense Breakdown</div>
-        <div id="category-breakdown-container" class="category-breakdown-list">
-          <div class="empty-state" style="padding:1rem;">Loading category breakdown...</div>
+      <!-- 3. Second Tier: 4 Financial Metric Cards Grid -->
+      <div class="dash-v2-metrics-grid">
+        <!-- Card 1: Total Balance -->
+        <div class="card metric-v2-card">
+          <div class="metric-v2-header">
+            <div class="metric-v2-label-group">
+              <span class="metric-v2-label">Total Balance</span>
+              <button class="metric-v2-eye-btn" id="btn-toggle-balance-visibility" title="Toggle balance visibility">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
+            <div class="metric-v2-icon-box bank">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6366F1" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+          </div>
+          <div class="metric-v2-amount" id="stat-balance">${formatCurrency(0, currencyCode)}</div>
+          <div class="metric-v2-subtext" id="stat-balance-sub">Loading accounts...</div>
+        </div>
+
+        <!-- Card 2: Income -->
+        <div class="card metric-v2-card">
+          <div class="metric-v2-header">
+            <span class="metric-v2-label">Income</span>
+            <div class="metric-v2-arrow income">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            </div>
+          </div>
+          <div class="metric-v2-amount income" id="stat-income">${formatCurrency(0, currencyCode)}</div>
+          <div class="metric-v2-footer">
+            <span class="metric-v2-subtext">This Month</span>
+            <span class="metric-v2-badge neutral" id="stat-income-badge">--</span>
+          </div>
+        </div>
+
+        <!-- Card 3: Expenses -->
+        <div class="card metric-v2-card">
+          <div class="metric-v2-header">
+            <span class="metric-v2-label">Expenses</span>
+            <div class="metric-v2-arrow expense">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F43F5E" stroke-width="2.5"><line x1="7" y1="7" x2="17" y2="17"/><polyline points="17 7 17 17 7 17"/></svg>
+            </div>
+          </div>
+          <div class="metric-v2-amount expense" id="stat-expense">${formatCurrency(0, currencyCode)}</div>
+          <div class="metric-v2-footer">
+            <span class="metric-v2-subtext">This Month</span>
+            <span class="metric-v2-badge neutral" id="stat-expense-badge">--</span>
+          </div>
+        </div>
+
+        <!-- Card 4: Safe to Spend -->
+        <div class="card metric-v2-card">
+          <div class="metric-v2-header">
+            <span class="metric-v2-label">Safe to Spend</span>
+            <div class="metric-v2-arrow safe">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2.5"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
+            </div>
+          </div>
+          <div class="metric-v2-amount" id="stat-daily-safe-spend">-- <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted);">/ day</span></div>
+          <div class="metric-v2-footer">
+            <span class="metric-v2-subtext" id="stat-safe-spend-subtext">Loading safe spend...</span>
+          </div>
+          <div class="metric-v2-progress-bg" style="margin-top:0.5rem;">
+            <div class="metric-v2-progress-fill" id="stat-safe-spend-fill" style="width: 0%; background: #F59E0B;"></div>
+          </div>
         </div>
       </div>
 
-      <!-- Recent Transactions Card -->
-      <div class="card dash-card-compact">
-        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-          <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Recent Transactions</span>
-          <a href="#transactions" class="view-all-link" style="color: #818cf8; font-size:0.82rem; font-weight:600; text-decoration:none;">
-            View All
-          </a>
+      <!-- 4. Third Tier: Analytics Grid (Income vs Expenses Bar Chart + Expense Breakdown Donut) -->
+      <div class="dash-v2-analytics-grid">
+        <!-- Income vs Expenses Chart Card -->
+        <div class="card analytics-v2-card">
+          <div class="analytics-v2-header">
+            <h3 class="analytics-v2-title">Income vs Expenses</h3>
+            <select class="analytics-v2-select" id="chart-period-select">
+              <option value="month">This Month</option>
+              <option value="quarter">This Quarter</option>
+              <option value="year">This Year</option>
+            </select>
+          </div>
+
+          <div id="trend-chart-container" class="analytics-chart-box">
+            <div class="dash-empty-breakdown" style="padding:2rem 1rem; text-align:center;">
+              <div style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">Loading trend chart...</div>
+            </div>
+          </div>
         </div>
-        <div id="recent-transactions-container">
-          <div class="empty-state" style="padding:1.25rem;">Loading recent transactions...</div>
+
+        <!-- Expense Breakdown Donut Chart Card -->
+        <div class="card analytics-v2-card">
+          <div class="analytics-v2-header">
+            <h3 class="analytics-v2-title">Expense Breakdown</h3>
+            <select class="analytics-v2-select">
+              <option value="month">This Month</option>
+              <option value="year">This Year</option>
+            </select>
+          </div>
+
+          <div class="donut-analytics-body">
+            <!-- Left Donut Chart Graphic -->
+            <div class="donut-graphic-wrapper">
+              <svg width="150" height="150" viewBox="0 0 120 120" class="donut-svg" id="donut-svg-graphic">
+                <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" />
+              </svg>
+              <div class="donut-center-info">
+                <div class="donut-center-val" id="donut-total-val">${formatCurrency(0, currencyCode)}</div>
+                <div class="donut-center-lbl">Total</div>
+              </div>
+            </div>
+
+            <!-- Right Legend List -->
+            <div class="donut-legend-list" id="category-breakdown-container">
+              <div class="dash-empty-breakdown" style="padding:1.5rem 0.5rem; text-align:center;">
+                <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">Loading breakdown...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="analytics-v2-footer">
+            <a href="#categories" class="analytics-view-report-link">View Full Report &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Fourth Tier: Recent Transactions & Account Overview (2 Columns Desktop) -->
+      <div class="dash-v2-bottom-grid">
+        <!-- Recent Transactions Card -->
+        <div class="card list-v2-card">
+          <div class="list-v2-header">
+            <h3 class="list-v2-title">Recent Transactions</h3>
+            <a href="#transactions" class="list-v2-link">View All</a>
+          </div>
+
+          <div id="recent-transactions-container" class="list-v2-container">
+            <div class="empty-state" style="padding:1.25rem;">Loading recent transactions...</div>
+          </div>
+        </div>
+
+        <!-- Accounts Overview Card -->
+        <div class="card list-v2-card">
+          <div class="list-v2-header">
+            <h3 class="list-v2-title">Accounts Overview</h3>
+            <a href="#accounts" class="list-v2-link">View All</a>
+          </div>
+
+          <div id="account-summary-container" class="list-v2-container">
+            <div class="empty-state" style="padding:1.25rem;">Loading accounts...</div>
+          </div>
+
+          <div class="list-v2-footer">
+            <a href="#accounts" class="btn btn-secondary list-v2-btn-block">Manage Accounts &rarr;</a>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Fifth Tier: Quick Actions Row -->
+      <div class="dash-v2-quick-actions-section">
+        <h4 class="quick-actions-label">Quick Actions</h4>
+        <div class="quick-actions-grid">
+          <button class="quick-action-tile" id="btn-quick-add-tx">
+            <div class="quick-tile-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            </div>
+            <div class="quick-tile-text">
+              <span class="quick-tile-title">Add Transaction</span>
+              <span class="quick-tile-sub">Record income or expense</span>
+            </div>
+          </button>
+
+          <button class="quick-action-tile" onclick="window.location.hash='#accounts'">
+            <div class="quick-tile-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="17 1 21 5 17 9"/><line x1="3" y1="5" x2="21" y2="5"/><polyline points="7 23 3 19 7 15"/><line x1="21" y1="19" x2="3" y2="19"/></svg>
+            </div>
+            <div class="quick-tile-text">
+              <span class="quick-tile-title">Transfer Money</span>
+              <span class="quick-tile-sub">Between accounts</span>
+            </div>
+          </button>
+
+          <button class="quick-action-tile" onclick="window.location.hash='#accounts'">
+            <div class="quick-tile-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <div class="quick-tile-text">
+              <span class="quick-tile-title">Add Account</span>
+              <span class="quick-tile-sub">Connect new account</span>
+            </div>
+          </button>
+
+          <button class="quick-action-tile" onclick="window.location.hash='#dashboard'">
+            <div class="quick-tile-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            </div>
+            <div class="quick-tile-text">
+              <span class="quick-tile-title">Create Budget</span>
+              <span class="quick-tile-sub">Set monthly budget</span>
+            </div>
+          </button>
+
+          <button class="quick-action-tile" onclick="window.location.hash='#pulse'">
+            <div class="quick-tile-icon">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            </div>
+            <div class="quick-tile-text">
+              <span class="quick-tile-title">Generate Report</span>
+              <span class="quick-tile-sub">Download insights</span>
+            </div>
+          </button>
         </div>
       </div>
     </div>
   `;
 
-  // Quick Add click handler
-  const addBtn = document.getElementById('btn-quick-add');
-  if (addBtn) {
-    addBtn.addEventListener('click', () => {
-      window.location.hash = '#transactions?action=new';
-    });
-    addBtn.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') {
-        e.preventDefault();
-        window.location.hash = '#transactions?action=new';
-      }
-    });
-  }
-
-  // Manage Favorites click handler
-  document.getElementById('btn-manage-favorites')?.addEventListener('click', () => {
-    openManageFavoritesModal({
-      onSuccess: async () => {
-        await loadDashboardData(currentTimeframe, currencyCode);
-      }
-    });
+  // Attach Quick Add click handler
+  document.getElementById('btn-quick-add-tx')?.addEventListener('click', () => {
+    window.location.hash = '#transactions?action=new';
   });
 
   // Timeframe selector click handlers
@@ -239,24 +389,109 @@ export async function renderDashboardView(container) {
 async function loadDashboardData(timeframe, currencyCode) {
    try {
   const [
-  data,
-  budgetSummary,
-  safeSpendData,
-  favorites,
-  accountSummary,
-  pulseData
-] = await Promise.all([
-  APIClient.getDashboardSummary(timeframe),
-  APIClient.getBudgetSummary().catch(() => null),
-  APIClient.getDailySafeSpend().catch(() => null),
-  APIClient.getFavorites().catch(() => []),
-  APIClient.getAccountSummary().catch(() => []),
-  APIClient.getPulse().catch(() => null)
-]);
+    data,
+    budgetSummary,
+    safeSpendData,
+    favorites,
+    accountSummary,
+    pulseData
+  ] = await Promise.all([
+    APIClient.getDashboardSummary(timeframe),
+    APIClient.getBudgetSummary().catch(() => null),
+    APIClient.getDailySafeSpend().catch(() => null),
+    APIClient.getFavorites().catch(() => []),
+    APIClient.getAccountSummary().catch(() => []),
+    APIClient.getPulse().catch(() => null)
+  ]);
+
+    // Update Account Count Subtext
+    const subEl = document.getElementById('stat-balance-sub');
+    if (subEl) {
+      const count = (accountSummary && Array.isArray(accountSummary)) ? accountSummary.length : 0;
+      subEl.textContent = `Across ${count} account${count === 1 ? '' : 's'}`;
+    }
+
     // Update Stat Cards
     document.getElementById('stat-balance').textContent = formatCurrency(data.summary.current_balance, currencyCode);
     document.getElementById('stat-income').textContent = formatCurrency(data.summary.total_income, currencyCode);
     document.getElementById('stat-expense').textContent = formatCurrency(data.summary.total_expense, currencyCode);
+
+    // Calculate Month-over-Month deltas from monthly_trends
+    const trends = (data && data.monthly_trends && Array.isArray(data.monthly_trends)) ? data.monthly_trends : [];
+    let incMoMText = 'No previous data';
+    let incMoMClass = 'metric-v2-badge neutral';
+    let expMoMText = 'No previous data';
+    let expMoMClass = 'metric-v2-badge neutral';
+
+    if (trends.length >= 2) {
+      const currentMonthData = trends[trends.length - 1];
+      const prevMonthData = trends[trends.length - 2];
+
+      const curInc = Number(currentMonthData.income) || 0;
+      const prevInc = Number(prevMonthData.income) || 0;
+      const curExp = Number(currentMonthData.expense) || 0;
+      const prevExp = Number(prevMonthData.expense) || 0;
+
+      // Income MoM
+      if (prevInc === 0) {
+        if (curInc > 0) {
+          incMoMText = '↑ 100% from last month';
+          incMoMClass = 'metric-v2-badge income';
+        } else {
+          incMoMText = '0% from last month';
+          incMoMClass = 'metric-v2-badge neutral';
+        }
+      } else {
+        const incPct = ((curInc - prevInc) / prevInc) * 100;
+        const absIncPct = Math.abs(Math.round(incPct));
+        if (incPct > 0) {
+          incMoMText = `↑ ${absIncPct}% from last month`;
+          incMoMClass = 'metric-v2-badge income';
+        } else if (incPct < 0) {
+          incMoMText = `↓ ${absIncPct}% from last month`;
+          incMoMClass = 'metric-v2-badge expense';
+        } else {
+          incMoMText = '0% from last month';
+          incMoMClass = 'metric-v2-badge neutral';
+        }
+      }
+
+      // Expense MoM
+      if (prevExp === 0) {
+        if (curExp > 0) {
+          expMoMText = '↑ 100% from last month';
+          expMoMClass = 'metric-v2-badge expense';
+        } else {
+          expMoMText = '0% from last month';
+          expMoMClass = 'metric-v2-badge neutral';
+        }
+      } else {
+        const expPct = ((curExp - prevExp) / prevExp) * 100;
+        const absExpPct = Math.abs(Math.round(expPct));
+        if (expPct > 0) {
+          expMoMText = `↑ ${absExpPct}% from last month`;
+          expMoMClass = 'metric-v2-badge expense';
+        } else if (expPct < 0) {
+          expMoMText = `↓ ${absExpPct}% from last month`;
+          expMoMClass = 'metric-v2-badge income';
+        } else {
+          expMoMText = '0% from last month';
+          expMoMClass = 'metric-v2-badge neutral';
+        }
+      }
+    }
+
+    const incBadge = document.getElementById('stat-income-badge');
+    if (incBadge) {
+      incBadge.textContent = incMoMText;
+      incBadge.className = incMoMClass;
+    }
+
+    const expBadge = document.getElementById('stat-expense-badge');
+    if (expBadge) {
+      expBadge.textContent = expMoMText;
+      expBadge.className = expMoMClass;
+    }
 
     // Render Daily Safe Spend Widget (v1.4.0)
     renderDailySafeSpendWidget(safeSpendData, currencyCode);
@@ -267,7 +502,10 @@ async function loadDashboardData(timeframe, currencyCode) {
     // Render Finora Pulse Card (v1.4.0)
     renderPulseCard(pulseData, currencyCode);
 
-        // Render Budget Overview Widget (v1.3.0)
+    // Render Smart Insight Card
+    renderSmartInsight(data.summary, data.category_breakdown, currencyCode);
+
+    // Render Budget Overview Widget (v1.3.0)
     renderBudgetOverviewWidget(budgetSummary, currencyCode);
 
     // Render Account Summary Widget (v2.0.0)
@@ -287,7 +525,7 @@ async function loadDashboardData(timeframe, currencyCode) {
         accountContainer.innerHTML = accountSummary.map(account => {
           const accNameLower = (account.account_name || '').toLowerCase();
           const isCash = accNameLower.includes('cash') || accNameLower.includes('wallet') || accNameLower.includes('hand') || accNameLower.includes('petty');
-          
+
           const iconSvg = isCash ? `
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M20 12V8H6a2 2 0 0 1-2-2c0-1.1.9-2 2-2h12v4"/>
@@ -339,38 +577,11 @@ async function loadDashboardData(timeframe, currencyCode) {
       }
     }
 
-
     // Render Trend Chart
     renderTrendChart(data.monthly_trends, currencyCode);
 
-    // Update Category Breakdown
-    const catContainer = document.getElementById('category-breakdown-container');
-    if (catContainer) {
-      if (!data.category_breakdown || data.category_breakdown.length === 0) {
-        catContainer.innerHTML = `
-          <div class="dash-empty-breakdown">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.3rem;">
-              <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
-            </svg>
-            <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">No expenses for this period.</div>
-          </div>
-        `;
-      } else {
-        catContainer.innerHTML = data.category_breakdown.map(cat => `
-          <div class="category-item">
-            <div class="category-info">
-              <div class="category-name">
-                <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${cat.color}"></span>
-                <span>${escapeHTML(cat.category_name)}</span>
-              </div>
-              <div style="font-weight:700; font-size:0.85rem;">${formatCurrency(cat.total, currencyCode)} (${cat.percentage}%)</div>
-            </div>
-            <div class="category-bar-bg">
-              <div class="category-bar-fill" style="width:${cat.percentage}%; background:${cat.color}"></div>
-            </div>
-          </div>
-        `).join('');
-      }
+    // Render Expense Breakdown Donut & Legend
+    renderExpenseBreakdown(data.category_breakdown, data.summary ? data.summary.total_expense : 0, currencyCode);   }
     }
 
     // Update Recent Activity (Limit to 3 items on Mobile Dashboard)
@@ -503,118 +714,40 @@ function renderPulseCard(pulseData, currencyCode) {
   if (!container) return;
 
   if (!pulseData || !pulseData.overall_score) {
-    container.innerHTML = `
-      <div class="card dash-card-compact pulse-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.12), rgba(139, 92, 246, 0.06)); border: 1px solid rgba(139, 92, 246, 0.25);">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
-          </div>
-        </div>
-        <div style="padding:0.75rem 0.5rem; text-align:center; color:var(--text-muted); font-size:0.85rem;">
-          Not enough transaction data yet. Keep tracking your finances to unlock your Pulse score.
-        </div>
-      </div>
-    `;
+    const scoreVal = document.getElementById('pulse-score-val');
+    if (scoreVal) scoreVal.textContent = '--';
     return;
   }
 
   // Color mapping for score
   const colorMap = {
-    'green': { hex: '#10b981', rgb: '16, 185, 129' },
-    'blue': { hex: '#3b82f6', rgb: '59, 130, 246' },
-    'orange': { hex: '#f97316', rgb: '249, 115, 22' },
-    'red': { hex: '#ef4444', rgb: '239, 68, 68' }
+    'green': { hex: '#10B981', rgb: '16, 185, 129' },
+    'blue': { hex: '#3B82F6', rgb: '59, 130, 246' },
+    'orange': { hex: '#F59E0B', rgb: '245, 158, 11' },
+    'red': { hex: '#F43F5E', rgb: '244, 63, 94' }
   };
-  const color = colorMap[pulseData.score_color] || { hex: '#a855f7', rgb: '168, 85, 247' };
-  const scorePercentage = (pulseData.overall_score / 100) * 100;
-  
-  // Create circular progress indicator
-  const circumference = 2 * Math.PI * 45; // radius = 45
-  const strokeDashoffset = circumference - (scorePercentage / 100) * circumference;
+  const color = colorMap[pulseData.score_color] || { hex: '#10B981', rgb: '16, 185, 129' };
+  const score = Math.round(pulseData.overall_score || 0);
 
-  // Build premium factor cards
-  let factorsHTML = '';
-  if (pulseData.factors && pulseData.factors.length > 0) {
-    factorsHTML = pulseData.factors.map((factor, idx) => {
-      const factorPercentage = (factor.score / 100) * 100;
-      return `
-        <div class="pulse-factor-card" style="animation-delay:${idx * 0.1}s;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
-            <div>
-              <div style="font-size:0.8rem; font-weight:700; color:var(--text-main); margin-bottom:0.15rem;">${factor.name}</div>
-              <div style="font-size:0.7rem; color:var(--text-muted); font-weight:500;">Weight: ${(factor.weight * 100).toFixed(0)}%</div>
-            </div>
-            <div style="font-size:1.1rem; font-weight:800; color:${color.hex};">${factor.score}</div>
-          </div>
-          <div style="width:100%; height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin-bottom:0.5rem;">
-            <div style="width:${factorPercentage}%; height:100%; background:linear-gradient(90deg, ${color.hex}, ${color.hex}cc); border-radius:3px; transition:width 0.6s cubic-bezier(0.4, 0, 0.2, 1);"></div>
-          </div>
-          <div style="font-size:0.75rem; color:var(--text-muted); line-height:1.4;">${factor.explanation}</div>
-        </div>
-      `;
-    }).join('');
+  // Gauge circumference for r=50 is ~314
+  const circumference = 314;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+
+  const scoreVal = document.getElementById('pulse-score-val');
+  const gradeVal = document.getElementById('pulse-grade-val');
+  const gaugeCircle = document.getElementById('pulse-gauge-circle');
+
+  if (scoreVal) scoreVal.textContent = score;
+  if (gradeVal) {
+    gradeVal.textContent = pulseData.score_label || pulseData.status || (score >= 80 ? 'Good' : score >= 60 ? 'Fair' : 'Needs Attention');
+    gradeVal.style.color = color.hex;
   }
-
-  container.innerHTML = `
-    <div class="card dash-card-compact pulse-card" style="background: linear-gradient(135deg, rgba(${color.rgb}, 0.08), rgba(139, 92, 246, 0.04)); border: 1px solid rgba(${color.rgb}, 0.25); overflow:hidden;">
-      <!-- Animated background accent -->
-      <div style="position:absolute; top:-50%; right:-50%; width:300px; height:300px; background:radial-gradient(circle, rgba(${color.rgb}, 0.1), transparent); border-radius:50%; animation:pulse-float 8s ease-in-out infinite; pointer-events:none;"></div>
-      
-      <!-- Content wrapper -->
-      <div style="position:relative; z-index:1;">
-        <!-- Header -->
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.2rem;">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
-            </svg>
-            <span style="font-size:0.95rem; font-weight:700; color:var(--text-main);">Finora Pulse</span>
-          </div>
-          <span style="font-size:0.7rem; font-weight:700; color:${color.hex}; background:rgba(${color.rgb}, 0.15); padding:0.2rem 0.6rem; border-radius:20px; letter-spacing:0.5px; text-transform:uppercase;">${pulseData.score_label}</span>
-        </div>
-
-        <!-- Score Circle Display -->
-        <div style="display:flex; justify-content:space-between; align-items:center; gap:1.5rem; margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:1px solid rgba(255,255,255,0.08);">
-          <!-- Circular Progress -->
-          <div style="position:relative; width:120px; height:120px; flex-shrink:0;">
-            <svg width="120" height="120" style="transform:rotate(-90deg);">
-              <circle cx="60" cy="60" r="45" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="3"/>
-              <circle cx="60" cy="60" r="45" fill="none" stroke="${color.hex}" stroke-width="3" stroke-dasharray="${circumference}" stroke-dashoffset="${strokeDashoffset}" stroke-linecap="round" style="transition:stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1); filter:drop-shadow(0 0 8px ${color.hex}33);"/>
-            </svg>
-            <div style="position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:0;">
-              <div style="font-size:2rem; font-weight:800; color:${color.hex}; font-variant-numeric:tabular-nums; line-height:1;">${pulseData.overall_score}</div>
-              <div style="font-size:0.65rem; color:var(--text-muted); font-weight:500; letter-spacing:0.3px;">SCORE</div>
-            </div>
-          </div>
-
-          <!-- Insight Text -->
-          <div style="flex:1; display:flex; flex-direction:column; gap:0.6rem;">
-            <div style="font-size:0.8rem; line-height:1.5; color:var(--text-muted);">
-              <strong style="color:var(--text-main); display:block; margin-bottom:0.3rem; font-size:0.85rem;">${pulseData.primary_insight}</strong>
-              ${pulseData.summary}
-            </div>
-          </div>
-        </div>
-
-        <!-- Factors Grid -->
-        <div style="margin-top:0.8rem;">
-          <div style="font-size:0.7rem; font-weight:700; color:var(--text-muted); text-transform:uppercase; letter-spacing:0.8px; margin-bottom:0.8rem;">Scoring Factors</div>
-          <div style="display:grid; gap:0.7rem;">
-            ${factorsHTML}
-          </div>
-        </div>
-
-        <!-- Footer Note -->
-        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:1rem; padding-top:0.8rem; border-top:1px solid rgba(255,255,255,0.08); font-style:italic; text-align:center; opacity:0.8;">
-          📊 Last 3 months • Updated monthly
-        </div>
-      </div>
-    </div>
-  `;
+  if (gaugeCircle) {
+    gaugeCircle.style.strokeDashoffset = strokeDashoffset;
+    gaugeCircle.style.stroke = color.hex;
+  }
 }
+
 
 function renderBudgetOverviewWidget(summary, currencyCode) {
   const container = document.getElementById('budget-overview-container');
@@ -768,46 +901,74 @@ function renderTrendChart(trends, currencyCode) {
   const chartContainer = document.getElementById('trend-chart-container');
   if (!chartContainer) return;
 
-  if (!trends || trends.length === 0) {
+  if (!trends || !Array.isArray(trends) || trends.length === 0) {
     chartContainer.innerHTML = `
-      <div class="dash-empty-breakdown">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.3rem;">
+      <div class="dash-empty-breakdown" style="padding: 2rem 1rem; text-align: center;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.5rem;">
           <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
         </svg>
-        <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">No monthly data available yet.</div>
+        <div style="font-size:0.85rem; color:var(--text-muted); font-weight:500;">No monthly trend data available yet.</div>
       </div>
     `;
     return;
   }
 
-  let maxVal = 10;
+  let maxVal = 0;
   trends.forEach(t => {
-    if (parseFloat(t.income) > maxVal) maxVal = parseFloat(t.income);
-    if (parseFloat(t.expense) > maxVal) maxVal = parseFloat(t.expense);
+    const inc = Number(t.income) || 0;
+    const exp = Number(t.expense) || 0;
+    if (inc > maxVal) maxVal = inc;
+    if (exp > maxVal) maxVal = exp;
   });
+  if (maxVal === 0) maxVal = 100;
+
+  const formatCompact = (val) => {
+    if (val >= 1000000) return `₹ ${(val / 1000000).toFixed(1)}M`;
+    if (val >= 1000) return `₹ ${(val / 1000).toFixed(0)}k`;
+    return `₹ ${val.toFixed(0)}`;
+  };
+
+  const yMax = formatCompact(maxVal);
+  const yMid = formatCompact(maxVal * 0.5);
+  const yZero = `₹ 0`;
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
   chartContainer.innerHTML = `
-    <div style="display:flex; justify-content:flex-end; gap:0.8rem; margin-bottom:0.5rem; font-size:0.75rem;">
-      <span style="display:inline-flex; align-items:center; gap:0.3rem;"><span style="width:8px; height:8px; border-radius:2px; background:var(--income);"></span> Income</span>
-      <span style="display:inline-flex; align-items:center; gap:0.3rem;"><span style="width:8px; height:8px; border-radius:2px; background:var(--expense);"></span> Expenses</span>
-    </div>
-    
-    <div style="display:flex; align-items:flex-end; justify-content:space-around; height:120px; padding-top:0.5rem; border-bottom:1px solid var(--glass-border); gap:0.35rem;">
-      ${trends.map(t => {
-        const incPct = Math.max(5, Math.round((parseFloat(t.income) / maxVal) * 100));
-        const expPct = Math.max(5, Math.round((parseFloat(t.expense) / maxVal) * 100));
-        const monthLabel = t.month;
+    <div class="bar-chart-graphic">
+      <div class="bar-chart-y-axis">
+        <span>${yMax}</span>
+        <span>${yMid}</span>
+        <span>${yZero}</span>
+      </div>
+      <div class="bar-chart-bars-group">
+        ${trends.map(t => {
+          const inc = Number(t.income) || 0;
+          const exp = Number(t.expense) || 0;
+          const incPct = Math.min(100, Math.max(inc > 0 ? 4 : 0, Math.round((inc / maxVal) * 100)));
+          const expPct = Math.min(100, Math.max(exp > 0 ? 4 : 0, Math.round((exp / maxVal) * 100)));
 
-        return `
-          <div style="display:flex; flex-direction:column; align-items:center; gap:0.3rem; flex:1; height:100%; justify-content:flex-end;">
-            <div style="display:flex; align-items:flex-end; gap:3px; height:100%;">
-              <div title="Income: ${formatCurrency(t.income, currencyCode)}" style="width:10px; height:${incPct}%; background:var(--income); border-radius:3px 3px 0 0; transition:height 0.4s ease;"></div>
-              <div title="Expense: ${formatCurrency(t.expense, currencyCode)}" style="width:10px; height:${expPct}%; background:var(--expense); border-radius:3px 3px 0 0; transition:height 0.4s ease;"></div>
+          const monthParts = (t.month || '').split('-');
+          let mLabel = t.month;
+          if (monthParts.length === 2) {
+            const mIdx = parseInt(monthParts[1], 10) - 1;
+            mLabel = monthNames[mIdx] || t.month;
+          }
+
+          const titleText = `${mLabel}: Income ${formatCurrency(inc, currencyCode)}, Expense ${formatCurrency(exp, currencyCode)}`;
+
+          return `
+            <div class="bar-pair" title="${titleText}">
+              <div class="bar income" style="height:${incPct}%;"></div>
+              <div class="bar expense" style="height:${expPct}%;"></div>
+              <span class="bar-label">${mLabel}</span>
             </div>
-            <span style="font-size:0.7rem; color:var(--text-muted); font-weight:600;">${monthLabel}</span>
-          </div>
-        `;
-      }).join('')}
+          `;
+        }).join('')}
+      </div>
+    </div>
+    <div class="bar-chart-legend">
+      <span class="legend-item"><span class="legend-dot income"></span> Income</span>
+      <span class="legend-item"><span class="legend-dot expense"></span> Expenses</span>
     </div>
   `;
 }
@@ -894,28 +1055,133 @@ function formatDateDisplay(isoDateStr) {
 
 function renderDailySafeSpendWidget(data, currencyCode) {
   const amountEl = document.getElementById('stat-daily-safe-spend');
-  const badgeEl = document.getElementById('safe-spend-days-badge');
   const subtextEl = document.getElementById('stat-safe-spend-subtext');
+  const fillEl = document.getElementById('stat-safe-spend-fill');
 
-  if (!amountEl || !badgeEl || !subtextEl) return;
+  if (!amountEl || !subtextEl) return;
 
   if (!data || !data.has_budget) {
-    amountEl.innerHTML = `--`;
-    badgeEl.textContent = ``;
+    amountEl.innerHTML = `-- <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted);">/ day</span>`;
     subtextEl.textContent = `Set a monthly budget to enable`;
+    subtextEl.style.color = 'var(--text-muted)';
+    if (fillEl) {
+      fillEl.style.width = `0%`;
+      fillEl.style.background = '#F59E0B';
+    }
     return;
   }
 
-  badgeEl.textContent = `${data.remaining_days} ${data.remaining_days === 1 ? 'day' : 'days'} left`;
+  const dailyAmt = formatCurrency(data.daily_safe_spend, currencyCode);
+  const remainingAmt = formatCurrency(data.remaining_budget, currencyCode);
+  const monthTotal = Number(data.month_total_budget) || 0;
+  const spentTotal = Number(data.current_month_spent) || 0;
 
   if (data.is_budget_exceeded) {
-    amountEl.innerHTML = `<span style="color:#F43F5E;">${formatCurrency(0, currencyCode)}/day</span>`;
-    subtextEl.textContent = `Budget Exceeded! Spent ${formatCurrency(data.current_month_spent, currencyCode)} of ${formatCurrency(data.month_total_budget, currencyCode)}`;
+    amountEl.innerHTML = `<span style="color:#F43F5E;">${formatCurrency(0, currencyCode)}</span> <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted);">/ day</span>`;
+    subtextEl.textContent = `Budget exceeded! Spent ${formatCurrency(spentTotal, currencyCode)} of ${formatCurrency(monthTotal, currencyCode)}`;
     subtextEl.style.color = '#F43F5E';
+    if (fillEl) {
+      fillEl.style.width = `100%`;
+      fillEl.style.background = '#F43F5E';
+    }
   } else {
-    amountEl.innerHTML = `${formatCurrency(data.daily_safe_spend, currencyCode)}/day`;
-    subtextEl.textContent = `${formatCurrency(data.remaining_budget, currencyCode)} remaining for ${data.remaining_days} days`;
+    amountEl.innerHTML = `${dailyAmt} <span style="font-size:0.8rem; font-weight:500; color:var(--text-muted);">/ day</span>`;
+    subtextEl.textContent = `${remainingAmt} left (${data.remaining_days} ${data.remaining_days === 1 ? 'day' : 'days'} left)`;
     subtextEl.style.color = 'var(--text-muted)';
+
+    let pctSpent = monthTotal > 0 ? Math.min(100, Math.max(0, Math.round((spentTotal / monthTotal) * 100))) : 0;
+    if (fillEl) {
+      fillEl.style.width = `${pctSpent}%`;
+      fillEl.style.background = pctSpent > 80 ? '#F59E0B' : '#10B981';
+    }
+  }
+}
+
+function renderExpenseBreakdown(breakdown, totalExpense, currencyCode) {
+  const totalValEl = document.getElementById('donut-total-val');
+  if (totalValEl) {
+    totalValEl.textContent = formatCurrency(totalExpense || 0, currencyCode);
+  }
+
+  const donutSvg = document.getElementById('donut-svg-graphic');
+  const catContainer = document.getElementById('category-breakdown-container');
+  const fallbackColors = ['#EC4899', '#F97316', '#06B6D4', '#A855F7', '#3B82F6', '#64748B', '#10B981', '#F59E0B'];
+
+  if (!breakdown || !Array.isArray(breakdown) || breakdown.length === 0 || Number(totalExpense) <= 0) {
+    if (donutSvg) {
+      donutSvg.innerHTML = `<circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="16" />`;
+    }
+    if (catContainer) {
+      catContainer.innerHTML = `
+        <div class="dash-empty-breakdown" style="padding: 1.5rem 0.5rem; text-align: center;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.3rem;">
+            <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+          </svg>
+          <div style="font-size:0.82rem; color:var(--text-muted); font-weight:500;">No expenses logged for this period.</div>
+        </div>
+      `;
+    }
+    return;
+  }
+
+  const circumference = 263.893; // 2 * PI * 42
+  let currentOffset = 0;
+  let circlesHTML = `<circle cx="60" cy="60" r="42" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="16" />`;
+
+  breakdown.forEach((cat, idx) => {
+    const color = cat.color || fallbackColors[idx % fallbackColors.length];
+    const pct = Number(cat.percentage) || 0;
+    const dashLen = (pct / 100) * circumference;
+    const dashArray = `${dashLen.toFixed(1)} ${circumference.toFixed(1)}`;
+    const dashOffset = (-currentOffset).toFixed(1);
+    currentOffset += dashLen;
+
+    circlesHTML += `
+      <circle cx="60" cy="60" r="42" fill="none"
+              stroke="${color}" stroke-width="16"
+              stroke-dasharray="${dashArray}"
+              stroke-dashoffset="${dashOffset}"
+              style="transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease;" />
+    `;
+  });
+
+  if (donutSvg) donutSvg.innerHTML = circlesHTML;
+
+  if (catContainer) {
+    catContainer.innerHTML = breakdown.map((cat, idx) => {
+      const color = cat.color || fallbackColors[idx % fallbackColors.length];
+      return `
+        <div class="legend-row">
+          <span class="legend-dot" style="background:${color};"></span>
+          <span class="legend-name">${escapeHTML(cat.category_name)}</span>
+          <span class="legend-pct">${cat.percentage}%</span>
+          <span class="legend-val">${formatCurrency(cat.total, currencyCode)}</span>
+        </div>
+      `;
+    }).join('');
+  }
+}
+
+function renderSmartInsight(summary, categoryBreakdown, currencyCode) {
+  const insightTextEl = document.getElementById('smart-insight-text');
+  if (!insightTextEl) return;
+
+  const totalExpense = summary ? Number(summary.total_expense) || 0 : 0;
+  const totalIncome = summary ? Number(summary.total_income) || 0 : 0;
+
+  if (categoryBreakdown && Array.isArray(categoryBreakdown) && categoryBreakdown.length > 0 && totalExpense > 0) {
+    const topCat = categoryBreakdown[0];
+    insightTextEl.innerHTML = `
+      Your highest spending category this period is <strong style="color:var(--text-main);">${escapeHTML(topCat.category_name)}</strong>, accounting for <strong style="color:#F43F5E;">${topCat.percentage}%</strong> (${formatCurrency(topCat.total, currencyCode)}) of your total expenses.
+    `;
+  } else if (totalIncome > 0 && totalExpense === 0) {
+    insightTextEl.innerHTML = `
+      Great job! You recorded <strong style="color:#10B981;">${formatCurrency(totalIncome, currencyCode)}</strong> in total income with zero expenses logged this period.
+    `;
+  } else {
+    insightTextEl.innerHTML = `
+      Not enough spending data to generate an insight yet. Start logging your transactions to see smart personalized insights.
+    `;
   }
 }
 

@@ -6,8 +6,13 @@ import { renderCategoriesView } from './views/categoriesView.js?v=1.3.0';
 import { renderProfileView } from './views/profileView.js?v=1.3.0';
 import { renderLandingView } from './views/landingView.js';
 import { renderLegalView } from './views/legalView.js?v=1.4.0';
+import { renderPulseView } from './views/pulseView.js';
 import APIClient from './api.js';
 import { renderAccountsView } from './views/accountsView.js';
+import { renderBudgetsView } from './views/budgetsView.js';
+import { renderInsightsView } from './views/insightsView.js';
+import { renderGoalsView } from './views/goalsView.js';
+import { renderReportsView } from './views/reportsView.js';
 class App {
   constructor() {
     this.appContainer = document.getElementById('app');
@@ -55,47 +60,115 @@ class App {
     const userInitial = user.name ? user.name.charAt(0).toUpperCase() : 'U';
 
     return `
-      <!-- Top Navbar (Desktop & Mobile Brand / Toggle) -->
-      <nav class="navbar">
+      <!-- Desktop Sidebar Navigation (>= 1024px) -->
+      <aside class="sidebar-v2" id="desktop-sidebar">
+        <!-- Sidebar Brand -->
+        <a href="#dashboard" class="sidebar-v2-brand">
+          <div class="sidebar-v2-logo-icon">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <span class="sidebar-v2-brand-text">Finora</span>
+        </a>
+
+        <!-- Sidebar Navigation Items -->
+        <nav class="sidebar-v2-nav">
+          <a href="#dashboard" class="sidebar-v2-link ${currentHash.startsWith('#dashboard') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+            <span>Dashboard</span>
+          </a>
+
+          <a href="#insights" class="sidebar-v2-link ${currentHash.startsWith('#insights') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            <span>Insights</span>
+          </a>
+
+          <a href="#transactions" class="sidebar-v2-link ${currentHash.startsWith('#transactions') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+            <span>Transactions</span>
+          </a>
+
+          <a href="#accounts" class="sidebar-v2-link ${currentHash.startsWith('#accounts') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            <span>Accounts</span>
+          </a>
+
+          <a href="#budgets" class="sidebar-v2-link ${currentHash.startsWith('#budgets') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+            <span>Budgets</span>
+          </a>
+
+          <a href="#categories" class="sidebar-v2-link ${currentHash.startsWith('#categories') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+            <span>Categories</span>
+          </a>
+
+          <a href="#pulse" class="sidebar-v2-link pulse-highlight ${currentHash === '#pulse' ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+            <span style="color:#10B981; font-weight:700;">Finora Pulse</span>
+            <span class="sidebar-v2-beta-badge">BETA</span>
+          </a>
+
+          <a href="#goals" class="sidebar-v2-link ${currentHash.startsWith('#goals') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            <span>Goals</span>
+          </a>
+
+          <a href="#reports" class="sidebar-v2-link ${currentHash.startsWith('#reports') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            <span>Reports</span>
+          </a>
+
+          <a href="#profile" class="sidebar-v2-link ${currentHash.startsWith('#profile') || currentHash.startsWith('#settings') ? 'active' : ''}">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            <span>Settings</span>
+          </a>
+
+          <a href="#profile" class="sidebar-v2-link">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            <span>Settings</span>
+          </a>
+        </nav>
+
+        <!-- Sidebar Bottom Promo Box -->
+        <div class="sidebar-v2-promo-box">
+          <div class="sidebar-v2-promo-title">👑 Finora Premium</div>
+          <p class="sidebar-v2-promo-sub">Unlock advanced insights and premium features.</p>
+          <button class="btn btn-emerald btn-block" style="padding:0.45rem; font-size:0.78rem; font-weight:700; border-radius:10px;">Upgrade Now</button>
+        </div>
+
+        <!-- Sidebar Bottom Theme & User Control -->
+        <div class="sidebar-v2-footer">
+          <div class="sidebar-v2-darkmode-row">
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+              <span>Dark Mode</span>
+            </div>
+            <label class="toggle-switch-v2">
+              <input type="checkbox" checked disabled />
+              <span class="toggle-slider-v2"></span>
+            </label>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Mobile Top Navbar (< 1024px) -->
+      <nav class="navbar mobile-navbar">
         <a href="#dashboard" class="brand">
           <img src="assets/logo.png?v=1.3.0" class="brand-logo-img" alt="Finora Logo" />
           <span>Finora</span>
         </a>
 
-        <!-- Desktop Navigation Links (>= 768px) -->
-<div class="nav-links">
-  <a href="#dashboard" class="nav-item ${currentHash.startsWith('#dashboard') ? 'active' : ''}">Dashboard</a>
-  <a href="#transactions" class="nav-item ${currentHash.startsWith('#transactions') ? 'active' : ''}">Transactions</a>
-  <a href="#accounts" class="nav-item ${currentHash.startsWith('#accounts') ? 'active' : ''}">Accounts</a>
-  <a href="#categories" class="nav-item ${currentHash.startsWith('#categories') ? 'active' : ''}">Categories</a>
-  <a href="#profile" class="nav-item ${currentHash.startsWith('#profile') ? 'active' : ''}">Profile</a>
-</div>
-
-        <!-- Desktop User Actions (>= 768px) -->
         <div class="nav-actions">
-          <div class="user-badge">
-            <span style="font-weight:600;">${this.escapeHTML(user.name)}</span>
-            <select id="header-currency-select" class="currency-select">
-              <option value="INR" ${user.currency_code === 'INR' ? 'selected' : ''}>₹ INR</option>
-              <option value="USD" ${user.currency_code === 'USD' ? 'selected' : ''}>$ USD</option>
-              <option value="EUR" ${user.currency_code === 'EUR' ? 'selected' : ''}>€ EUR</option>
-              <option value="GBP" ${user.currency_code === 'GBP' ? 'selected' : ''}>£ GBP</option>
-            </select>
-          </div>
-          <button class="btn btn-secondary" id="btn-feedback" style="padding:0.4rem 0.8rem; font-size:0.85rem; margin-right:0.4rem;">
+          <button class="btn btn-secondary" id="btn-feedback" style="padding:0.35rem 0.65rem; font-size:0.8rem; margin-right:0.3rem;">
             Feedback
           </button>
-          <button class="btn btn-secondary" id="btn-logout" style="padding:0.4rem 0.8rem; font-size:0.85rem;">
-            Logout
+          <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="User Profile Menu">
+            ${userInitial}
           </button>
         </div>
 
-        <!-- Mobile Profile Menu Toggle Button (< 768px) -->
-        <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="User Profile Menu">
-          ${userInitial}
-        </button>
-
-        <!-- Mobile Profile Menu Dropdown (< 768px) -->
         <div class="mobile-menu-dropdown" id="mobile-menu-dropdown">
           <div class="mobile-menu-user-info">
             <div class="user-avatar-lg">${userInitial}</div>
@@ -119,44 +192,45 @@ class App {
             </select>
           </div>
           <div class="mobile-menu-divider"></div>
-          <button class="btn btn-secondary btn-block" id="btn-mobile-feedback" style="padding:0.5rem; font-size:0.85rem; margin-bottom:0.5rem;">
-            Send Feedback
-          </button>
           <button class="btn btn-danger btn-block" id="btn-mobile-logout" style="padding:0.5rem; font-size:0.85rem;">
             Logout
           </button>
         </div>
       </nav>
 
-      <!-- Fixed Mobile Bottom Navigation Bar (< 768px) -->
+      <!-- Fixed Mobile Bottom Navigation Bar (< 1024px) -->
       <div class="bottom-nav">
         <a href="#dashboard" class="bottom-nav-item ${currentHash.startsWith('#dashboard') ? 'active' : ''}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <rect x="3" y="3" width="7" height="9" rx="1"/>
-            <rect x="14" y="3" width="7" height="5" rx="1"/>
-            <rect x="14" y="12" width="7" height="9" rx="1"/>
-            <rect x="3" y="16" width="7" height="5" rx="1"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/>
           </svg>
           <span>Dashboard</span>
         </a>
+
         <a href="#transactions" class="bottom-nav-item ${currentHash.startsWith('#transactions') ? 'active' : ''}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="1" x2="12" y2="23"/>
-            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
           </svg>
           <span>Transactions</span>
         </a>
-        <a href="#categories" class="bottom-nav-item ${currentHash.startsWith('#categories') ? 'active' : ''}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
-            <line x1="7" y1="7" x2="7.01" y2="7"/>
+
+        <a href="#pulse" class="bottom-nav-item ${currentHash === '#pulse' ? 'active' : ''}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
           </svg>
-          <span>Categories</span>
+          <span>Pulse</span>
         </a>
+
+        <a href="#accounts" class="bottom-nav-item ${currentHash.startsWith('#accounts') ? 'active' : ''}">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>
+          </svg>
+          <span>Accounts</span>
+        </a>
+
         <a href="#profile" class="bottom-nav-item ${currentHash.startsWith('#profile') ? 'active' : ''}">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-            <circle cx="12" cy="7" r="4"/>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
           </svg>
           <span>Profile</span>
         </a>
@@ -452,14 +526,30 @@ class App {
         await renderCategoriesView(mainContent);
         break;
       case '#profile':
+      case '#settings':
         await renderProfileView(mainContent);
         break;
       case '#dashboard':
         await renderDashboardView(mainContent);
         break;
+      case '#pulse':
+        await renderPulseView(mainContent);
+        break;
       case '#accounts':
         await renderAccountsView(mainContent);
         break;  
+      case '#budgets':
+        await renderBudgetsView(mainContent);
+        break;
+      case '#insights':
+        await renderInsightsView(mainContent);
+        break;
+      case '#goals':
+        await renderGoalsView(mainContent);
+        break;
+      case '#reports':
+        await renderReportsView(mainContent);
+        break;
       default:
         if (authManager.isAuthenticated()) {
           await renderDashboardView(mainContent);

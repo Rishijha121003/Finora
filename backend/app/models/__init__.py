@@ -6,6 +6,7 @@ from app.models.budget import Budget
 from app.models.favorite import FavoriteTransaction
 from app.models.account import Account
 from app.models.transfer import Transfer
+from app.models.goal import Goal
 __all__ = [
     "User",
     "Category",
@@ -14,5 +15,6 @@ __all__ = [
     "Budget",
     "FavoriteTransaction",
     "Account",
-    "Transfer"
+    "Transfer",
+    "Goal"
 ]

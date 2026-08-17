@@ -16,6 +16,7 @@ from app.routers import (
     accounts,
     transfers,
     pulse,
+    goals,
 )
 
 
@@ -68,6 +69,7 @@ app.include_router(favorites.router, prefix=settings.API_V1_STR)
 app.include_router(accounts.router, prefix=settings.API_V1_STR)
 app.include_router(transfers.router, prefix=settings.API_V1_STR)
 app.include_router(pulse.router, prefix=settings.API_V1_STR)
+app.include_router(goals.router, prefix=settings.API_V1_STR)
 
 
 @app.get("/")

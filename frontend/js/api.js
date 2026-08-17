@@ -1,6 +1,6 @@
 // Finora REST API Client
 
-const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'|| window.location.hostname === '0.0.0.0')
   ? 'http://localhost:8000/api/v1'
   : 'https://finora-9nid.onrender.com/api/v1';
 
@@ -35,7 +35,7 @@ class APIClient {
 
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      
+
       if (response.status === 401 && !endpoint.includes('/auth/login')) {
         this.setAuthToken(null);
         window.dispatchEvent(new Event('auth:unauthorized'));
@@ -143,6 +143,34 @@ class APIClient {
       method: 'DELETE'
     });
   }
+
+  static async exportTransactionsCsv(params = {}) {
+    const token = this.getAuthToken();
+    const query = new URLSearchParams();
+    Object.keys(params).forEach(key => {
+      if (params[key] !== null && params[key] !== undefined && params[key] !== '') {
+        query.append(key, params[key]);
+      }
+    });
+    const headers = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const response = await fetch(`${API_BASE_URL}/transactions/export?${query.toString()}`, { headers });
+    if (!response.ok) {
+      throw new Error('Failed to export CSV');
+    }
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `finora_transactions_${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(url);
+  }
+
 
   // Dashboard Summary Endpoint
   static async getDashboardSummary(timeframe = 'month', startDate = null, endDate = null) {
@@ -302,6 +330,39 @@ static async createAccount(accountData) {
     a.click();
     a.remove();
     window.URL.revokeObjectURL(url);
+  }
+
+  static async exportTransactionsCsv(params = {}) {
+    return this.exportTransactionsCSV(params.range_type || 'all', params.start_date, params.end_date);
+  }
+
+  // Goals API (v2.0.0)
+  static async getGoals() {
+    return this.request('/goals');
+  }
+
+  static async getGoalsSummary() {
+    return this.request('/goals/summary');
+  }
+
+  static async createGoal(goalData) {
+    return this.request('/goals', {
+      method: 'POST',
+      body: JSON.stringify(goalData)
+    });
+  }
+
+  static async updateGoal(id, goalData) {
+    return this.request(`/goals/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(goalData)
+    });
+  }
+
+  static async deleteGoal(id) {
+    return this.request(`/goals/${id}`, {
+      method: 'DELETE'
+    });
   }
 }
 

@@ -17,6 +17,7 @@ from app.models.transaction import Transaction
 from app.models.account import Account
 from app.models.budget import Budget
 from app.schemas.pulse import PulseFactorScore, PulseResponse
+from app.utils.balance import calculate_account_balance, calculate_total_balance
 
 
 class PulseScoreCalculator:
@@ -315,22 +316,7 @@ class PulseScoreCalculator:
                 month_end = (current_date.replace(day=1) + timedelta(days=32)).replace(day=1) - timedelta(days=1)
                 month_end = min(month_end, self.today)
                 
-                income = self.db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                    Transaction.account_id == account.id,
-                    Transaction.type == "INCOME",
-                    Transaction.transaction_date >= self.window_start,
-                    Transaction.transaction_date <= month_end
-                ).scalar() or 0
-                
-                expense = self.db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-                    Transaction.account_id == account.id,
-                    Transaction.type == "EXPENSE",
-                    Transaction.transaction_date >= self.window_start,
-                    Transaction.transaction_date <= month_end
-                ).scalar() or 0
-                
-                balance = Decimal(str(account.opening_balance)) + Decimal(str(income)) - Decimal(str(expense))
-                total_balance += balance
+                total_balance += calculate_account_balance(account, self.db, as_of_date=month_end)
             
             balances.append(total_balance)
             
@@ -454,23 +440,11 @@ class PulseScoreCalculator:
     
     def _get_total_balance(self, accounts: list) -> Decimal:
         """Calculate total balance across all accounts"""
-        return sum(
-            self._calculate_account_balance(acc) for acc in accounts
-        ) or Decimal("0.00")
+        return calculate_total_balance(accounts, self.db)
     
     def _calculate_account_balance(self, account: Account) -> Decimal:
         """Calculate current balance for an account"""
-        income = self.db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-            Transaction.account_id == account.id,
-            Transaction.type == "INCOME"
-        ).scalar() or 0
-        
-        expense = self.db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
-            Transaction.account_id == account.id,
-            Transaction.type == "EXPENSE"
-        ).scalar() or 0
-        
-        return Decimal(str(account.opening_balance)) + Decimal(str(income)) - Decimal(str(expense))
+        return calculate_account_balance(account, self.db)
     
     def _format_decimal(self, value: Decimal) -> str:
         """Format decimal for display"""

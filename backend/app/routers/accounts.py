@@ -16,47 +16,10 @@ from app.models.user import User
 from app.routers.deps import get_current_user
 from app.schemas.account import AccountCreate, AccountResponse
 from app.models.transfer import Transfer
+from app.utils.balance import calculate_account_balance
 
 
 router = APIRouter(prefix="/accounts", tags=["Accounts"])
-
-def calculate_account_balance(
-    account: Account,
-    db: Session,
-) -> Decimal:
-    income = db.query(
-        func.coalesce(func.sum(Transaction.amount), 0)
-    ).filter(
-        Transaction.account_id == account.id,
-        Transaction.type == "INCOME",
-    ).scalar()
-
-    expense = db.query(
-        func.coalesce(func.sum(Transaction.amount), 0)
-    ).filter(
-        Transaction.account_id == account.id,
-        Transaction.type == "EXPENSE",
-    ).scalar()
-
-    incoming = db.query(
-        func.coalesce(func.sum(Transfer.amount), 0)
-    ).filter(
-        Transfer.to_account_id == account.id
-    ).scalar()
-
-    outgoing = db.query(
-        func.coalesce(func.sum(Transfer.amount), 0)
-    ).filter(
-        Transfer.from_account_id == account.id
-    ).scalar()
-
-    return (
-        Decimal(str(account.opening_balance))
-        + Decimal(str(income))
-        - Decimal(str(expense))
-        + Decimal(str(incoming))
-        - Decimal(str(outgoing))
-    )
 
 @router.get("", response_model=list[AccountResponse])
 def get_accounts(
@@ -158,7 +121,9 @@ def get_account_summary(
         ).scalar() or 0
 
         result.append({
+            "account_id": account.id,
             "account_name": account.name,
+            "account_type": account.account_type,
             "income": Decimal(str(income)),
             "expense": Decimal(str(expense)),
             "current_balance": calculate_account_balance(account, db),

@@ -11,8 +11,8 @@ export async function renderProfileView(container) {
     <div class="profile-container" style="max-width:720px; margin:0 auto; padding-bottom:4rem;">
       <!-- Profile Page Header -->
       <div class="profile-page-header">
-        <h1 class="profile-title">My Profile</h1>
-        <p class="profile-subtitle">Manage your account, privacy, and data preferences</p>
+        <h1 class="profile-title">Settings & Profile</h1>
+        <p class="profile-subtitle">Manage your account preferences, security settings, and data privacy</p>
       </div>
 
       <div id="profile-message" class="profile-alert" style="display:none; margin-bottom:1.5rem;"></div>
@@ -298,7 +298,7 @@ export async function renderProfileView(container) {
   document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
     try {
       if (window.showToast) window.showToast('Preparing CSV download...', 'info');
-      await APIClient.exportTransactionsCSV('all');
+      await APIClient.exportTransactionsCsv({ range_type: 'all' });
       if (window.showToast) window.showToast('CSV export downloaded successfully!', 'success');
     } catch (err) {
       if (window.showToast) window.showToast(err.message || 'Export failed', 'error');

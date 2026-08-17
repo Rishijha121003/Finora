@@ -67,7 +67,9 @@ def export_transactions_csv(
     ).join(
     Account,
     Transaction.account_id == Account.id,
-     )
+     ).filter(
+    Transaction.user_id == current_user.id
+    )
 
     if range_type == "month":
         today = date.today()

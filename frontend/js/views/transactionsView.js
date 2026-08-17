@@ -18,13 +18,24 @@ export async function renderTransactionsView(container, queryParams = {}) {
           <p class="tx-subtitle">Track and manage your financial activity</p>
         </div>
 
-        <button class="btn-add-tx-main" id="btn-add-tx">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="5" x2="12" y2="19"/>
-            <line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-          <span>Add Transaction</span>
-        </button>
+        <div style="display: flex; gap: 0.75rem; align-items: center; flex-wrap: wrap;">
+          <button class="btn btn-secondary" id="btn-export-csv" style="display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.55rem 1rem; border-radius: 12px; font-size: 0.85rem; font-weight: 700; cursor: pointer;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+              <polyline points="7 10 12 15 17 10"/>
+              <line x1="12" y1="15" x2="12" y2="3"/>
+            </svg>
+            <span>Export CSV</span>
+          </button>
+
+          <button class="btn-add-tx-main" id="btn-add-tx">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"/>
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Add Transaction</span>
+          </button>
+        </div>
       </div>
 
       <!-- Search Input Container -->
@@ -33,7 +44,7 @@ export async function renderTransactionsView(container, queryParams = {}) {
           <circle cx="11" cy="11" r="8"/>
           <line x1="21" y1="21" x2="16.65" y2="16.65"/>
         </svg>
-        <input type="text" id="search-input" class="tx-search-input" placeholder="Search notes or category..." />
+        <input type="text" id="search-input" class="tx-search-input" placeholder="Search title, category, or note..." />
       </div>
 
       <!-- Filter Controls Grid -->
@@ -48,7 +59,7 @@ export async function renderTransactionsView(container, queryParams = {}) {
           <option value="">All Categories</option>
         </select>
         <select id="filter-account" class="tx-filter-select">
-         <option value="">All Accounts</option>
+          <option value="">All Accounts</option>
         </select>
 
         <button type="button" class="btn-adv-filters" id="btn-open-adv-filters">
@@ -136,7 +147,6 @@ export async function renderTransactionsView(container, queryParams = {}) {
           </div>
         </div>
 
-
         <div style="display:flex; justify-content:space-between; align-items:center; gap:0.75rem;">
           <button type="button" class="btn btn-secondary" id="adv-filter-reset-btn" style="flex:1;">Reset</button>
           <button type="button" class="btn btn-primary" id="adv-filter-apply-btn" style="flex:1.5;">Apply Filters</button>
@@ -168,8 +178,8 @@ export async function renderTransactionsView(container, queryParams = {}) {
             </div>
           </div>
           <div class="form-group">
-          <label>Account</label>
-          <select id="tx-account" class="form-control" required></select>
+            <label>Account</label>
+            <select id="tx-account" class="form-control" required></select>
           </div>
           <div class="form-group">
             <label>Category</label>
@@ -207,24 +217,43 @@ export async function renderTransactionsView(container, queryParams = {}) {
     </div>
   `;
 
-  // Load categories into select dropdowns
+  // Load categories and accounts into select dropdowns
   try {
- currentCategories = await APIClient.getCategories();
-populateCategoryDropdowns(currentCategories);
+    currentCategories = await APIClient.getCategories();
+    populateCategoryDropdowns(currentCategories);
 
-currentAccounts = await APIClient.getAccounts();
-populateFilterAccountDropdowns(currentAccounts);
-
-  const accounts = await APIClient.getAccounts();
-  populateAccountDropdowns(accounts);
-
-} catch (err) {
-  console.error('Failed to load categories/accounts:', err);
-}
+    currentAccounts = await APIClient.getAccounts();
+    populateFilterAccountDropdowns(currentAccounts);
+    populateAccountDropdowns(currentAccounts);
+  } catch (err) {
+    console.error('Failed to load categories/accounts:', err);
+  }
 
   // Set default today's date in tx form
   const dateInput = document.getElementById('tx-date');
   if (dateInput) dateInput.value = new Date().toISOString().split('T')[0];
+
+  // Export CSV handler
+  document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
+    try {
+      const startDateInput = document.getElementById('filter-start-date');
+      const endDateInput = document.getElementById('filter-end-date');
+      const params = {};
+      if (startDateInput && startDateInput.value) {
+        params.start_date = startDateInput.value;
+        params.range_type = 'custom';
+      }
+      if (endDateInput && endDateInput.value) {
+        params.end_date = endDateInput.value;
+        params.range_type = 'custom';
+      }
+      await APIClient.exportTransactionsCsv(params);
+      if (window.showToast) window.showToast('CSV export downloaded successfully!', 'success');
+    } catch (err) {
+      if (window.showToast) window.showToast('Failed to export CSV: ' + err.message, 'error');
+      else alert('Failed to export CSV: ' + err.message);
+    }
+  });
 
   // Filters State & Reloaders
   let currentPage = 1;
@@ -239,9 +268,8 @@ populateFilterAccountDropdowns(currentAccounts);
     triggerReload();
   });
   document.getElementById('filter-category')?.addEventListener('change', triggerReload);
-  document.getElementById('filter-category')?.addEventListener('change', triggerReload);
   document.getElementById('filter-account')?.addEventListener('change', triggerReload);
-  
+
   // Advanced Filters Modal Handlers
   const advModal = document.getElementById('adv-filter-modal');
   const btnOpenAdv = document.getElementById('btn-open-adv-filters');
@@ -320,7 +348,6 @@ populateFilterAccountDropdowns(currentAccounts);
   });
 
   btnApplyAdv?.addEventListener('click', () => {
-
     updateAdvBadge();
     advModal.classList.remove('active');
     triggerReload();
@@ -363,7 +390,6 @@ populateFilterAccountDropdowns(currentAccounts);
     document.getElementById('modal-title').textContent = tx ? 'Edit Transaction' : 'Add New Transaction';
     document.getElementById('modal-error').style.display = 'none';
 
-    // Apply mobile bottom-sheet class if viewport <= 640px
     const modalDialog = modal.querySelector('.modal-dialog') || modal.querySelector('.modal');
     if (modalDialog) {
       if (window.innerWidth <= 640) {
@@ -377,6 +403,7 @@ populateFilterAccountDropdowns(currentAccounts);
       document.getElementById('tx-type').value = tx.type;
       updateCategorySelectForType(tx.type);
       document.getElementById('tx-amount').value = tx.amount;
+      if (tx.account_id) document.getElementById('tx-account').value = tx.account_id;
       document.getElementById('tx-category').value = tx.category_id;
       document.getElementById('tx-date').value = tx.transaction_date;
       document.getElementById('tx-payment').value = tx.payment_method;
@@ -399,26 +426,24 @@ populateFilterAccountDropdowns(currentAccounts);
   document.getElementById('modal-close-btn')?.addEventListener('click', closeModal);
   document.getElementById('modal-cancel-btn')?.addEventListener('click', closeModal);
 
-  // Filter category dropdown on type change inside modal
   document.getElementById('tx-type')?.addEventListener('change', (e) => {
     updateCategorySelectForType(e.target.value);
   });
 
-  // Modal Form Submit
   document.getElementById('tx-form')?.addEventListener('submit', async (e) => {
     e.preventDefault();
     const errorDiv = document.getElementById('modal-error');
     errorDiv.style.display = 'none';
 
-   const payload = {
-  type: document.getElementById('tx-type').value,
-  amount: parseFloat(document.getElementById('tx-amount').value),
-  category_id: document.getElementById('tx-category').value,
-  account_id: document.getElementById('tx-account').value,
-  transaction_date: document.getElementById('tx-date').value,
-  payment_method: document.getElementById('tx-payment').value,
-  note: document.getElementById('tx-note').value
-};
+    const payload = {
+      type: document.getElementById('tx-type').value,
+      amount: parseFloat(document.getElementById('tx-amount').value),
+      category_id: document.getElementById('tx-category').value,
+      account_id: document.getElementById('tx-account').value,
+      transaction_date: document.getElementById('tx-date').value,
+      payment_method: document.getElementById('tx-payment').value,
+      note: document.getElementById('tx-note').value
+    };
 
     try {
       if (editingTxId) {
@@ -443,19 +468,16 @@ populateFilterAccountDropdowns(currentAccounts);
 
   await loadTransactions(currentPage, currencyCode);
 }
+
 function populateAccountDropdowns(accounts) {
   const txAccountSelect = document.getElementById('tx-account');
-
   if (txAccountSelect) {
     txAccountSelect.innerHTML = accounts
-      .map(account => `
-        <option value="${account.id}">
-          ${account.name}
-        </option>
-      `)
+      .map(account => `<option value="${account.id}">${escapeHTML(account.name)}</option>`)
       .join('');
   }
 }
+
 function populateCategoryDropdowns(categories) {
   const filterCatSelect = document.getElementById('filter-category');
   if (filterCatSelect) {
@@ -464,15 +486,13 @@ function populateCategoryDropdowns(categories) {
   }
   updateCategorySelectForType('EXPENSE');
 }
+
 function populateFilterAccountDropdowns(accounts) {
   const filterAccountSelect = document.getElementById('filter-account');
-
   if (filterAccountSelect) {
     filterAccountSelect.innerHTML =
       `<option value="">All Accounts</option>` +
-      accounts.map(account =>
-        `<option value="${account.id}">${escapeHTML(account.name)}</option>`
-      ).join('');
+      accounts.map(account => `<option value="${account.id}">${escapeHTML(account.name)}</option>`).join('');
   }
 }
 
@@ -503,23 +523,32 @@ async function loadTransactions(page, currencyCode) {
     end_date: endDateInput ? endDateInput.value : ''
   };
 
+  tableContainer.innerHTML = `
+    <div style="padding:2.5rem; text-align:center; color:var(--text-muted); background:var(--bg-card); border:1px solid var(--glass-border); border-radius:18px;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" style="animation: spin 1s linear infinite; margin-bottom:0.5rem;">
+        <circle cx="12" cy="12" r="10" stroke-opacity="0.25"></circle>
+        <path d="M12 2a10 10 0 0 1 10 10" stroke-linecap="round"></path>
+      </svg>
+      <div style="font-weight:600; font-size:0.9rem;">Loading transactions...</div>
+    </div>
+  `;
+
   try {
     const data = await APIClient.getTransactions(params);
 
-    // Update tab count badges if available
     const totalCount = data.pagination ? data.pagination.total : (data.transactions ? data.transactions.length : 0);
     const tabAllCount = document.getElementById('tab-count-all');
     if (tabAllCount) tabAllCount.textContent = `(${totalCount})`;
 
     if (!data.transactions || data.transactions.length === 0) {
       tableContainer.innerHTML = `
-        <div class="empty-state" style="padding:3rem 1.5rem; text-align:center;">
+        <div class="empty-state" style="padding:3rem 1.5rem; text-align:center; background:var(--bg-card); border:1px solid var(--glass-border); border-radius:20px;">
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-muted)" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom:0.75rem;">
             <circle cx="11" cy="11" r="8"/>
             <line x1="21" y1="21" x2="16.65" y2="16.65"/>
           </svg>
           <h3 style="font-size:1.05rem; font-weight:700; color:var(--text-main); margin-bottom:0.25rem;">No transactions found</h3>
-          <p style="font-size:0.85rem; color:var(--text-muted); max-width:340px; margin:0 auto;">Try adjusting your filters or search query, or record a new transaction.</p>
+          <p style="font-size:0.85rem; color:var(--text-muted); max-width:340px; margin:0 auto 1rem auto;">Try adjusting your filters or search query, or record a new transaction.</p>
         </div>
       `;
       paginationContainer.innerHTML = '';
@@ -533,12 +562,13 @@ async function loadTransactions(page, currencyCode) {
         <table class="table">
           <thead>
             <tr>
+              <th>Date</th>
               <th>Account</th>
-<th>Category</th>
-<th>Method</th>
-<th>Note</th>
-<th>Type</th>
-<th style="text-align:right;">Amount</th>
+              <th>Category</th>
+              <th>Method</th>
+              <th>Note</th>
+              <th>Type</th>
+              <th style="text-align:right;">Amount</th>
               <th style="text-align:center;">Actions</th>
             </tr>
           </thead>
@@ -546,22 +576,19 @@ async function loadTransactions(page, currencyCode) {
             ${data.transactions.map(tx => `
               <tr>
                 <td><strong>${formatDateDisplay(tx.transaction_date)}</strong></td>
-                <td>
-                 ${escapeHTML(tx.account_name || '-')}
-                </td>
+                <td>${escapeHTML(tx.account_name || '-')}</td>
                 <td>
                   <span style="display:inline-block; width:8px; height:8px; border-radius:50%; background:${tx.category_color || '#64748b'}; margin-right:6px;"></span>
                   ${escapeHTML(tx.category_name || 'Uncategorized')}
                 </td>
-
                 <td><span class="badge badge-${tx.payment_method.toLowerCase()}">${tx.payment_method}</span></td>
                 <td style="color:var(--text-muted); font-size:0.88rem;">${escapeHTML(tx.note || '-')}</td>
                 <td><span class="badge badge-${tx.type.toLowerCase()}">${tx.type}</span></td>
-                <td style="text-align:right; font-weight:700; color:${tx.type === 'INCOME' ? 'var(--income)' : 'var(--text-main)'}">
+                <td style="text-align:right; font-weight:700; color:${tx.type === 'INCOME' ? '#10B981' : '#F43F5E'}">
                   ${tx.type === 'INCOME' ? '+' : '-'}${formatCurrency(tx.amount, currencyCode)}
                 </td>
                 <td style="text-align:center;">
-                  <button class="btn btn-secondary btn-edit-tx" data-id="${tx.id}" style="padding:0.3rem 0.6rem; font-size:0.8rem;">Edit</button>
+                  <button class="btn btn-secondary btn-edit-tx" data-id="${tx.id}" style="padding:0.3rem 0.6rem; font-size:0.8rem; margin-right:4px;">Edit</button>
                   <button class="btn btn-danger btn-delete-tx" data-id="${tx.id}" style="padding:0.3rem 0.6rem; font-size:0.8rem;">Delete</button>
                 </td>
               </tr>
@@ -587,8 +614,8 @@ async function loadTransactions(page, currencyCode) {
                 <div class="tx-details">
                   <span class="tx-cat-name">${escapeHTML(tx.category_name || 'Uncategorized')}</span>
                   <span class="tx-sub-info">
-  ${escapeHTML(tx.account_name || '-')} • ${formattedDate} • ${paymentLabel}
-</span>
+                    ${escapeHTML(tx.account_name || '-')} • ${formattedDate} • ${paymentLabel}
+                  </span>
                   <span class="tx-type-pill ${isIncome ? 'income' : 'expense'}">${isIncome ? 'Income' : 'Expense'}</span>
                 </div>
               </div>
@@ -623,7 +650,7 @@ async function loadTransactions(page, currencyCode) {
       </div>
     `;
 
-    // Render pagination with improved state (Issue #3 Fix)
+    // Render pagination controls
     const meta = data.pagination;
     const totalPages = meta.total_pages || 1;
     const currentPageNum = meta.page || 1;
@@ -662,7 +689,6 @@ async function loadTransactions(page, currencyCode) {
         e.stopPropagation();
         const txId = btn.dataset.id;
         const menu = document.getElementById(`tx-menu-${txId}`);
-        // Close other open menus
         document.querySelectorAll('.tx-action-dropdown').forEach(m => {
           if (m !== menu) m.classList.remove('active');
         });
@@ -670,12 +696,10 @@ async function loadTransactions(page, currencyCode) {
       });
     });
 
-    // Close action dropdowns when clicking outside
     document.addEventListener('click', () => {
       document.querySelectorAll('.tx-action-dropdown').forEach(m => m.classList.remove('active'));
     });
 
-    // Attach Edit Action Listener to both desktop & mobile views
     tableContainer.querySelectorAll('.btn-edit-tx').forEach(btn => {
       btn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -687,6 +711,7 @@ async function loadTransactions(page, currencyCode) {
           document.getElementById('modal-title').textContent = 'Edit Transaction';
           editingTxId = tx.id;
           document.getElementById('tx-amount').value = tx.amount;
+          if (tx.account_id) document.getElementById('tx-account').value = tx.account_id;
           document.getElementById('tx-category').value = tx.category_id;
           document.getElementById('tx-date').value = tx.transaction_date;
           document.getElementById('tx-payment').value = tx.payment_method;
@@ -696,7 +721,6 @@ async function loadTransactions(page, currencyCode) {
       });
     });
 
-    // Attach Delete Action Listener to both desktop & mobile views
     tableContainer.querySelectorAll('.btn-delete-tx').forEach(btn => {
       btn.addEventListener('click', async (e) => {
         e.stopPropagation();
@@ -716,7 +740,14 @@ async function loadTransactions(page, currencyCode) {
 
   } catch (err) {
     console.error(err);
-    tableContainer.innerHTML = `<div class="empty-state" style="padding:2rem;">Failed to load transactions. Please try again.</div>`;
+    tableContainer.innerHTML = `
+      <div class="empty-state" style="padding:2.5rem; text-align:center; background:var(--bg-card); border:1px solid rgba(244,63,94,0.3); border-radius:20px;">
+        <h3 style="color:#F43F5E; font-size:1.05rem; font-weight:700; margin-bottom:0.4rem;">Failed to load transactions</h3>
+        <p style="color:var(--text-muted); font-size:0.85rem; margin-bottom:1rem;">${escapeHTML(err.message || 'An API error occurred while loading transaction history.')}</p>
+        <button id="retry-tx-btn" class="btn btn-primary" style="padding:0.45rem 1rem; border-radius:10px; background:#6366F1; border:none; color:#FFF; font-weight:700;">Retry</button>
+      </div>
+    `;
+    tableContainer.querySelector('#retry-tx-btn')?.addEventListener('click', () => loadTransactions(page, currencyCode));
   }
 }
 
