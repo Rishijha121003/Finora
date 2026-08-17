@@ -705,6 +705,14 @@ async function loadDashboardData(timeframe, currencyCode) {
     }
   } catch (err) {
     console.error('Failed to load dashboard data:', err);
+    const accountList = document.getElementById('account-summary-list');
+    if (accountList && accountList.innerHTML.includes('Loading accounts')) {
+      accountList.innerHTML = '<div style="font-size:0.82rem; color:var(--text-muted); padding:0.5rem 0;">Unable to load account summary.</div>';
+    }
+    const recentContainer = document.getElementById('recent-transactions-container');
+    if (recentContainer && recentContainer.innerHTML.includes('Loading recent transactions')) {
+      recentContainer.innerHTML = '<div style="font-size:0.82rem; color:var(--text-muted); padding:0.5rem 0;">Unable to load recent activity.</div>';
+    }
   }
 }
 
