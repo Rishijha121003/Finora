@@ -19,7 +19,7 @@ class Transaction(Base):
     account_id = Column(
         String(36),
         ForeignKey("accounts.id", ondelete="RESTRICT"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     # Relationships

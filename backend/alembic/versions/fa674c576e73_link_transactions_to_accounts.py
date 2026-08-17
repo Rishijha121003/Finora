@@ -78,6 +78,16 @@ def upgrade() -> None:
         unique=False,
     )
 
+    op.add_column(
+        "transactions",
+        sa.Column(
+            "account_id",
+            sa.String(length=36),
+            sa.ForeignKey("accounts.id", ondelete="RESTRICT"),
+            nullable=True,
+        ),
+    )
+
 
 def downgrade() -> None:
     op.drop_index(

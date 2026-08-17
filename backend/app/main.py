@@ -27,6 +27,21 @@ async def lifespan(app: FastAPI):
     # Startup: Create tables if not present & seed default categories
     try:
         Base.metadata.create_all(bind=engine)
+
+        # Schema column auto-migration for existing tables
+        try:
+            from sqlalchemy import inspect, text
+            with engine.connect() as conn:
+                inspector = inspect(conn)
+                if 'transactions' in inspector.get_table_names():
+                    cols = [c['name'] for c in inspector.get_columns('transactions')]
+                    if 'account_id' not in cols:
+                        conn.execute(text("ALTER TABLE transactions ADD COLUMN account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE RESTRICT"))
+                        conn.commit()
+                        print("Schema auto-migrated: added account_id column to transactions table")
+        except Exception as mig_err:
+            print("Schema column auto-migration note:", mig_err)
+
         db = SessionLocal()
         try:
             seed_default_categories(db)
