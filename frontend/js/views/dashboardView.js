@@ -581,8 +581,7 @@ async function loadDashboardData(timeframe, currencyCode) {
     renderTrendChart(data.monthly_trends, currencyCode);
 
     // Render Expense Breakdown Donut & Legend
-    renderExpenseBreakdown(data.category_breakdown, data.summary ? data.summary.total_expense : 0, currencyCode);   }
-    }
+    renderExpenseBreakdown(data.category_breakdown, data.summary ? data.summary.total_expense : 0, currencyCode);
 
     // Update Recent Activity (Limit to 3 items on Mobile Dashboard)
     const recentContainer = document.getElementById('recent-transactions-container');
