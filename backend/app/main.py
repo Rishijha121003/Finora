@@ -3,7 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.config import settings
-from app.database import SessionLocal
+from app.database import SessionLocal, engine, Base
+import app.models
 from app.seed import seed_default_categories
 from app.routers import (
     auth,
@@ -24,6 +25,7 @@ from app.routers import (
 async def lifespan(app: FastAPI):
     # Startup: Create tables if not present & seed default categories
     try:
+        Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         try:
             seed_default_categories(db)
