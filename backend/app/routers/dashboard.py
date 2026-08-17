@@ -213,8 +213,10 @@ def get_dashboard_summary(
     ]
 
     # Recent 5 Transactions
-    recent_txs = db.query(Transaction, Category).join(
+    recent_txs = db.query(Transaction, Category, Account).outerjoin(
         Category, Transaction.category_id == Category.id
+    ).outerjoin(
+        Account, Transaction.account_id == Account.id
     ).filter(
         Transaction.user_id == current_user.id
     ).order_by(
@@ -227,16 +229,17 @@ def get_dashboard_summary(
             user_id=tx.user_id,
             category_id=tx.category_id,
             account_id=tx.account_id,
-            category_name=cat.name,
-            category_icon=cat.icon,
-            category_color=cat.color,
+            account_name=acc.name if acc else None,
+            category_name=cat.name if cat else "Uncategorized",
+            category_icon=cat.icon if cat else "tag",
+            category_color=cat.color if cat else "#3b82f6",
             type=tx.type,
             amount=tx.amount,
             transaction_date=tx.transaction_date,
             payment_method=tx.payment_method,
             note=tx.note,
             created_at=tx.created_at
-        ) for tx, cat in recent_txs
+        ) for tx, cat, acc in recent_txs
     ]
 
     return DashboardSummaryResponse(
