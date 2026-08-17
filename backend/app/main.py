@@ -28,6 +28,19 @@ async def lifespan(app: FastAPI):
     try:
         Base.metadata.create_all(bind=engine)
 
+        # Ensure Alembic migration state is stamped to current head
+        try:
+            from alembic.config import Config
+            from alembic import command
+            import os
+
+            ini_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "alembic.ini")
+            if os.path.exists(ini_path):
+                alembic_cfg = Config(ini_path)
+                command.stamp(alembic_cfg, "head")
+        except Exception as alembic_err:
+            print("Alembic stamp note:", alembic_err)
+
         # Schema column auto-migration for existing tables
         try:
             from sqlalchemy import inspect, text
