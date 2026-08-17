@@ -110,22 +110,26 @@ def get_dashboard_summary(
         base_query = base_query.filter(Transaction.transaction_date <= filter_end)
 
     # Calculate Totals
-    income_query = base_query.filter(Transaction.type == "INCOME")
-    expense_query = base_query.filter(Transaction.type == "EXPENSE")
-
-    total_income = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+    # Calculate Totals
+    income_query = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
         Transaction.user_id == current_user.id,
-        Transaction.type == "INCOME",
-        Transaction.transaction_date >= filter_start if filter_start else True,
-        Transaction.transaction_date <= filter_end if filter_end else True
-    ).scalar() or Decimal("0.00")
+        Transaction.type == "INCOME"
+    )
+    if filter_start:
+        income_query = income_query.filter(Transaction.transaction_date >= filter_start)
+    if filter_end:
+        income_query = income_query.filter(Transaction.transaction_date <= filter_end)
+    total_income = income_query.scalar() or Decimal("0.00")
 
-    total_expense = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
+    expense_query = db.query(func.coalesce(func.sum(Transaction.amount), 0)).filter(
         Transaction.user_id == current_user.id,
-        Transaction.type == "EXPENSE",
-        Transaction.transaction_date >= filter_start if filter_start else True,
-        Transaction.transaction_date <= filter_end if filter_end else True
-    ).scalar() or Decimal("0.00")
+        Transaction.type == "EXPENSE"
+    )
+    if filter_start:
+        expense_query = expense_query.filter(Transaction.transaction_date >= filter_start)
+    if filter_end:
+        expense_query = expense_query.filter(Transaction.transaction_date <= filter_end)
+    total_expense = expense_query.scalar() or Decimal("0.00")
 
     total_income_dec = Decimal(str(total_income))
     total_expense_dec = Decimal(str(total_expense))
@@ -149,7 +153,7 @@ def get_dashboard_summary(
         Category.icon,
         Category.color,
         func.sum(Transaction.amount).label("category_total")
-    ).join(
+    ).outerjoin(
         Category, Transaction.category_id == Category.id
     ).filter(
         Transaction.user_id == current_user.id,
@@ -167,12 +171,12 @@ def get_dashboard_summary(
 
     category_breakdown = []
     for cat_id, cat_name, icon, color, cat_total in category_results:
-        cat_total_dec = Decimal(str(cat_total))
+        cat_total_dec = Decimal(str(cat_total or 0))
         percentage = float((cat_total_dec / total_expense_dec * 100)) if total_expense_dec > 0 else 0.0
         category_breakdown.append(
             CategoryBreakdownItem(
-                category_id=cat_id,
-                category_name=cat_name,
+                category_id=cat_id or "uncategorized",
+                category_name=cat_name or "Uncategorized",
                 icon=icon or "tag",
                 color=color or "#3b82f6",
                 total=cat_total_dec,
@@ -196,13 +200,15 @@ def get_dashboard_summary(
 
     monthly_dict = {}
     for yr, mo, t_type, sum_amt in trend_rows:
+        if yr is None or mo is None:
+            continue
         month_key = f"{int(yr):04d}-{int(mo):02d}"
         if month_key not in monthly_dict:
             monthly_dict[month_key] = {"income": Decimal("0.00"), "expense": Decimal("0.00")}
-        if t_type == "INCOME":
-            monthly_dict[month_key]["income"] += Decimal(str(sum_amt))
+        if t_type and t_type.upper() == "INCOME":
+            monthly_dict[month_key]["income"] += Decimal(str(sum_amt or 0))
         else:
-            monthly_dict[month_key]["expense"] += Decimal(str(sum_amt))
+            monthly_dict[month_key]["expense"] += Decimal(str(sum_amt or 0))
 
     monthly_trends = [
         MonthlyTrendItem(

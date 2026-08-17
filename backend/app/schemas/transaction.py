@@ -44,10 +44,10 @@ class TransactionUpdate(BaseModel):
 class TransactionResponse(BaseModel):
     id: str
     user_id: str
-    category_id: str
+    category_id: Optional[str] = None
 
     # V2
-    account_id: str
+    account_id: Optional[str] = None
     account_name: Optional[str] = None
 
     category_name: Optional[str] = None

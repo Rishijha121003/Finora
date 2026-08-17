@@ -52,6 +52,12 @@ async def lifespan(app: FastAPI):
                         conn.execute(text("ALTER TABLE transactions ADD COLUMN account_id VARCHAR(36) REFERENCES accounts(id) ON DELETE RESTRICT"))
                         conn.commit()
                         print("Schema auto-migrated: added account_id column to transactions table")
+                    else:
+                        try:
+                            conn.execute(text("ALTER TABLE transactions ALTER COLUMN account_id DROP NOT NULL"))
+                            conn.commit()
+                        except Exception:
+                            pass
         except Exception as mig_err:
             print("Schema column auto-migration note:", mig_err)
 
