@@ -1,18 +1,18 @@
 import { authManager } from './auth.js';
 import { renderAuthView } from './views/authView.js';
-import { renderDashboardView } from './views/dashboardView.js?v=1.3.0';
-import { renderTransactionsView } from './views/transactionsView.js?v=1.3.0';
-import { renderCategoriesView } from './views/categoriesView.js?v=1.3.0';
-import { renderProfileView } from './views/profileView.js?v=1.3.0';
+import { renderDashboardView } from './views/dashboardView.js?v=2.0.0';
+import { renderTransactionsView } from './views/transactionsView.js?v=2.0.0';
+import { renderCategoriesView } from './views/categoriesView.js?v=2.0.0';
+import { renderProfileView } from './views/profileView.js?v=2.0.0';
 import { renderLandingView } from './views/landingView.js';
-import { renderLegalView } from './views/legalView.js?v=1.4.0';
-import { renderPulseView } from './views/pulseView.js';
+import { renderLegalView } from './views/legalView.js?v=2.0.0';
+import { renderPulseView } from './views/pulseView.js?v=2.0.0';
 import APIClient from './api.js';
-import { renderAccountsView } from './views/accountsView.js';
-import { renderBudgetsView } from './views/budgetsView.js';
-import { renderInsightsView } from './views/insightsView.js';
-import { renderGoalsView } from './views/goalsView.js';
-import { renderReportsView } from './views/reportsView.js';
+import { renderAccountsView } from './views/accountsView.js?v=2.0.0';
+import { renderBudgetsView } from './views/budgetsView.js?v=2.0.0';
+import { renderInsightsView } from './views/insightsView.js?v=2.0.0';
+import { renderGoalsView } from './views/goalsView.js?v=2.0.0';
+import { renderReportsView } from './views/reportsView.js?v=2.0.0';
 class App {
   constructor() {
     this.appContainer = document.getElementById('app');

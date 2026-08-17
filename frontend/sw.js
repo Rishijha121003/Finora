@@ -1,5 +1,5 @@
-// Finora Production Service Worker (v1.3.0)
-const CACHE_NAME = 'finora-shell-v1.3.0-rev2';
+// Finora Production Service Worker (v2.0.0)
+const CACHE_NAME = 'finora-shell-v2.0.0';
 
 const STATIC_SHELL_ASSETS = [
   '/',
@@ -9,13 +9,22 @@ const STATIC_SHELL_ASSETS = [
   '/js/app.js',
   '/js/api.js',
   '/js/auth.js',
+  '/js/currency.js',
   '/js/views/authView.js',
   '/js/views/dashboardView.js',
   '/js/views/transactionsView.js',
   '/js/views/categoriesView.js',
   '/js/views/profileView.js',
   '/js/views/landingView.js',
+  '/js/views/legalView.js',
+  '/js/views/pulseView.js',
+  '/js/views/accountsView.js',
+  '/js/views/budgetsView.js',
+  '/js/views/insightsView.js',
+  '/js/views/goalsView.js',
+  '/js/views/reportsView.js',
   '/js/components/transactionModal.js',
+  '/js/components/manageFavoritesModal.js',
   '/assets/favicon.png',
   '/assets/favicon.ico',
   '/assets/apple-touch-icon.png',
