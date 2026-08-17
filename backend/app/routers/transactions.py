@@ -61,14 +61,14 @@ def export_transactions_csv(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Transaction, Category, Account).join(
-    Category,
-    Transaction.category_id == Category.id,
-    ).join(
-    Account,
-    Transaction.account_id == Account.id,
-     ).filter(
-    Transaction.user_id == current_user.id
+    query = db.query(Transaction, Category, Account).outerjoin(
+        Category,
+        Transaction.category_id == Category.id,
+    ).outerjoin(
+        Account,
+        Transaction.account_id == Account.id,
+    ).filter(
+        Transaction.user_id == current_user.id
     )
 
     if range_type == "month":
@@ -166,14 +166,14 @@ def get_transactions(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    query = db.query(Transaction, Category, Account).join(
-    Category,
-    Transaction.category_id == Category.id,
-    ).join(
-    Account,
-    Transaction.account_id == Account.id,
+    query = db.query(Transaction, Category, Account).outerjoin(
+        Category,
+        Transaction.category_id == Category.id,
+    ).outerjoin(
+        Account,
+        Transaction.account_id == Account.id,
     ).filter(
-    Transaction.user_id == current_user.id
+        Transaction.user_id == current_user.id
     )
 
     if start_date:
@@ -264,7 +264,7 @@ def get_transactions(
                 user_id=tx.user_id,
                 category_id=tx.category_id,
                 account_id=tx.account_id,
-                account_name=account.name,
+                account_name=account.name if account else None,
                 category_name=cat.name if cat else None,
                 category_icon=cat.icon if cat else None,
                 category_color=cat.color if cat else None,

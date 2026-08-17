@@ -182,15 +182,17 @@ def get_dashboard_summary(
 
     # Monthly Trends (Last 6 Months)
     six_months_ago = today - timedelta(days=180)
+    year_col = extract('year', Transaction.transaction_date)
+    month_col = extract('month', Transaction.transaction_date)
     trend_rows = db.query(
-        extract('year', Transaction.transaction_date).label('yr'),
-        extract('month', Transaction.transaction_date).label('mo'),
+        year_col.label('yr'),
+        month_col.label('mo'),
         Transaction.type,
         func.sum(Transaction.amount).label('sum_amount')
     ).filter(
         Transaction.user_id == current_user.id,
         Transaction.transaction_date >= six_months_ago
-    ).group_by('yr', 'mo', Transaction.type).all()
+    ).group_by(year_col, month_col, Transaction.type).all()
 
     monthly_dict = {}
     for yr, mo, t_type, sum_amt in trend_rows:
